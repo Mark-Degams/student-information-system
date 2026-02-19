@@ -52,10 +52,13 @@ def student_system_gui():
             response = messagebox.askyesno("Generate Random Student", "Its look like your CSV Files are empty, do you want to generate random student?")
             if response:
                 RanCsvGen.generate_random_student()
-                    
+                search_student()
+                show_notif("100 Random Students Are Added")
+
+               
         if len(CsvRead.student()) == 1:
             generate_student()
-            
+ 
     def add_placeholder(entry, text):
         entry.delete(0, END)
         entry.insert(0, text)
@@ -795,11 +798,9 @@ def student_system_gui():
     add_button.config(command=show_add_menu)
 
     add_placeholder(input_entry, "Enter Student Info...")
-    empty_csv_check()
+    window.after(100, empty_csv_check)
     search_student() 
     CsvSort.All()
-
-    search_job = None
 
     return window
 
@@ -809,3 +810,4 @@ search_by_Student, search_by_Program, search_by_College = True, False, False
 sort_by_name, sort_by_year, sort_by_program = False, False, False
 sort_by_program_code, sort_by_program_name = False, False
 sort_by_college_name = False
+search_job = None
