@@ -3,6 +3,7 @@ from tkinter import *
 from tkinter import ttk, messagebox
 from pathlib import Path
 
+from src import RanCsvGen
 from src import Constraints
 
 def student_system_gui():
@@ -43,10 +44,18 @@ def student_system_gui():
     output_frame = Frame(window, bg=bg_color)
     output_frame.pack(pady=20)
 
-    CsvSort.All()
-
     # --- GUI Functions ---
 
+    def empty_csv_check():
+
+        def generate_student():
+            response = messagebox.askyesno("Generate Random Student", "Its look like your CSV Files are empty, do you want to generate random student?")
+            if response:
+                RanCsvGen.generate_random_student()
+                    
+        if len(CsvRead.student()) == 1:
+            generate_student()
+            
     def add_placeholder(entry, text):
         entry.delete(0, END)
         entry.insert(0, text)
@@ -786,7 +795,9 @@ def student_system_gui():
     add_button.config(command=show_add_menu)
 
     add_placeholder(input_entry, "Enter Student Info...")
+    empty_csv_check()
     search_student() 
+    CsvSort.All()
 
     search_job = None
 
