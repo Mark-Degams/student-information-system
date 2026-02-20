@@ -2,7 +2,6 @@ from src.csv_core import *
 from tkinter import *
 from tkinter import ttk, messagebox
 from pathlib import Path
-
 from src import RanCsvGen
 from src import Constraints
 
@@ -159,7 +158,16 @@ def student_system_gui():
                 result = CsvSearch.studentGender(input_text)
             elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter Student Info...":
                 result = CsvRead.student()[1:]
-
+            else: 
+                students = CsvRead.student()[1:]
+                result = [row for row in students 
+                          if input_text.lower() in row[0].lower().replace("-","") or
+                          input_text.lower() in row[1].lower() or
+                          input_text.lower() in row[2].lower() or
+                          input_text.lower() in row[3].lower().replace("-","") or
+                          input_text.lower() in row[4].lower() or
+                          input_text.lower() in row[5].lower()]
+                          
         display_result(result)
 
     def search_program():
@@ -179,7 +187,7 @@ def student_system_gui():
 
             headers = CsvRead.program()[0]
             tree = ttk.Treeview(output_frame, columns=headers, show="headings")
-            tree.pack(fill="both", expand=True)
+            tree.pack(fill=BOTH, expand=True)
 
             for i in range(len(headers)):
                 h = headers[i]
@@ -213,6 +221,12 @@ def student_system_gui():
                 result = CsvSearch.programCollege(input_text)
             elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter Program Info...":
                 result = CsvRead.program()[1:]
+            else: 
+                programs = CsvRead.program()[1:]
+                result = [row for row in programs if 
+                          input_text.lower() in row[0].lower().replace("-","") or
+                          input_text.lower() in row[1].lower().replace("-","") or
+                          input_text.lower() in row[2].lower()]
 
         display_result(result)
 
@@ -232,7 +246,7 @@ def student_system_gui():
 
             headers = CsvRead.college()[0]
             tree = ttk.Treeview(output_frame, columns=headers, show="headings")
-            tree.pack(fill="both", expand=True)
+            tree.pack(fill=BOTH, expand=True)
 
             for i in range(len(headers)):
                 h = headers[i]
@@ -268,6 +282,13 @@ def student_system_gui():
         global search_by_Student, search_by_Program, search_by_College
         button_name = "Search by: "
 
+        Placeholders = [["Enter Student Info...", "Enter Student ID...",
+                         "Enter Student Name...", "Enter Student Program..."],
+                        ["Enter Program Info...", "Enter Program Code...",
+                         "Enter Program Name...", "Enter Program College..."],
+                        ["Enter College Info...", "Enter College Code...",
+                         "Enter College Name..."]]
+
         if search_by_Student:
             global search_by_student_ID, search_by_student_name, search_by_student_program, toggle_search_by_student_value
 
@@ -281,25 +302,25 @@ def student_system_gui():
                     search_by_student_name = False
                     search_by_student_program = False
                     button_name += "Default"
-                    add_placeholder(input_entry, "Enter Student Info...")
+                    add_placeholder(input_entry, Placeholders[0][0])
                 case 2:
                     search_by_student_ID = True
                     search_by_student_name = False
                     search_by_student_program = False
                     button_name += "ID"
-                    add_placeholder(input_entry, "Enter Student ID...")
+                    add_placeholder(input_entry, Placeholders[0][1])
                 case 3:
                     search_by_student_ID = False
                     search_by_student_name = True
                     search_by_student_program = False
                     button_name += "Name"
-                    add_placeholder(input_entry, "Enter Student Name...")
+                    add_placeholder(input_entry, Placeholders[0][2])
                 case 4:
                     search_by_student_ID = False
                     search_by_student_name = False
                     search_by_student_program = True
                     button_name += "Program"
-                    add_placeholder(input_entry, "Enter Student Program...")
+                    add_placeholder(input_entry, Placeholders[0][3])
 
         elif search_by_Program: 
             global search_by_program_code, search_by_program_name, search_by_program_college, toggle_search_by_program_value
@@ -314,25 +335,25 @@ def student_system_gui():
                     search_by_program_name = False
                     search_by_program_college = False
                     button_name += "Default"
-                    add_placeholder(input_entry, "Enter Program Info...")
+                    add_placeholder(input_entry, Placeholders[1][0])
                 case 2:
                     search_by_program_code = True
                     search_by_program_name = False
                     search_by_program_college = False
                     button_name += "Code"
-                    add_placeholder(input_entry, "Enter Program Code...")
+                    add_placeholder(input_entry, Placeholders[1][1])
                 case 3:
                     search_by_program_code = False
                     search_by_program_name = True
                     search_by_program_college = False
                     button_name += "Name"
-                    add_placeholder(input_entry, "Enter Program Name...")
+                    add_placeholder(input_entry, Placeholders[1][2])
                 case 4:
                     search_by_program_code = False
                     search_by_program_name = False
                     search_by_program_college = True
                     button_name += "College"
-                    add_placeholder(input_entry, "Enter Program College...")
+                    add_placeholder(input_entry, Placeholders[1][3])
 
         else:
             global search_by_college_code, search_by_college_name, toggle_search_by_college_value
@@ -346,17 +367,17 @@ def student_system_gui():
                     search_by_college_code = False
                     search_by_college_name = False
                     button_name += "Default"
-                    add_placeholder(input_entry, "Enter College Info...")
+                    add_placeholder(input_entry, Placeholders[2][0])
                 case 2: 
                     search_by_college_code = True
                     search_by_college_name = False
                     button_name += "Code"
-                    add_placeholder(input_entry, "Enter College Code...")
+                    add_placeholder(input_entry, Placeholders[2][1])
                 case 3:
                     search_by_college_code = False
                     search_by_college_name = True
                     button_name += "Name"
-                    add_placeholder(input_entry, "Enter College Name...")
+                    add_placeholder(input_entry, Placeholders[2][2])
 
         toggle_search_button.config(text=button_name)
     
@@ -483,37 +504,203 @@ def student_system_gui():
 
     def delete_confirm(data_id):
 
-        m, message = "Confirm Delete", f"Are you sure you want to delete "
-        if search_by_Student: message += f"Student {data_id}?"
-        elif search_by_Program: message += f"Program {data_id}?\nThis would also delete all the Student belong to this Program"
-        elif search_by_College: message += f"College {data_id}?\nThis would also delete all the Program and Student belong to this College"
-        response = messagebox.askyesno(m, message)
+        preview_window = Toplevel(window)
+        preview_window.title("Confirm Delete")
+        preview_window.geometry("420x480")
+        #preview_window.resizable(False, False) 
+        preview_window.grab_set()
 
-        if response:
-            notify = ""
+        bg_color = "#f5f6fa"
+        preview_window.configure(bg=bg_color)
+
+        container = Frame(preview_window, bg=bg_color)
+        container.pack(fill=BOTH, expand=True, padx=15, pady=15)
+
+        students_to_delete = []
+        programs_to_delete = []
+
+        # STUDENT DELETE
+
+        if search_by_Student:
+            preview_window.geometry("420x130")
+            Label(
+                container,
+                text=f"⚠ Are you sure you want to delete Student?",
+                bg=bg_color, fg="#e9240e",
+                font=("Arial", 11, "bold")
+            ).pack(pady=(5,0))
+            Label(
+                container,
+                text=f"{data_id}?",
+                bg=bg_color, fg="#000000",
+                font=("Arial", 12, "bold")
+            ).pack(pady=(0,0))
+
+        # PROGRAM DELETE
+
+        elif search_by_Program:
+            preview_window.geometry("300x250")
+
+            all_students = CsvRead.student()[1:]
+            students_to_delete = [row for row in all_students if row[3] == data_id]
+
+            Label(
+                container,
+                text=f"⚠ Deleting Program {data_id}\nwill also delete:",
+                bg=bg_color, fg="#e9240e",
+                font=("Arial", 11, "bold")
+            ).pack(pady=5)
+
+            if students_to_delete:
+
+                frame = Frame(container)
+                frame.pack(fill=BOTH, expand=True, pady=5)
+
+                tree = ttk.Treeview(
+                    frame,
+                    columns=("Student ID",),
+                    show="headings",
+                    height=4
+                )
+
+                scrollbar = Scrollbar(frame, orient="vertical", command=tree.yview)
+                tree.configure(yscrollcommand=scrollbar.set)
+
+                tree.pack(side="left", fill=BOTH, expand=True)
+                scrollbar.pack(side="right", fill="y")
+
+                tree.heading("Student ID", text="Student ID")
+                tree.column("Student ID", width=200, anchor=CENTER)
+
+                for row in students_to_delete:
+                    tree.insert("", END, values=(row[0],))
+
+            else:
+                preview_window.geometry("300x150")
+                Label(container, text="No students affected.", bg=bg_color).pack(pady=(10,0))
+
+        # COLLEGE DELETE
+
+        elif search_by_College:
+
+            all_programs = CsvRead.program()[1:]
+            programs_to_delete = [row for row in all_programs if row[0] == data_id]
+
+            all_students = CsvRead.student()[1:]
+            program_codes = [p[1] for p in programs_to_delete]
+            students_to_delete = [row for row in all_students if row[3] in program_codes]
+
+            Label(
+                container,
+                text=f"⚠ Deleting College {data_id} will also delete:",
+                bg=bg_color, fg="#e9240e",
+                font=("Arial", 10, "bold")
+            ).pack(pady=5)
+
+            if programs_to_delete:
+                if not students_to_delete:
+                    preview_window.geometry("480x250")
+
+                Label(container, text=f"{len(programs_to_delete)} Programs", fg="blue", bg=bg_color)\
+                    .pack(pady=(10, 0))
+
+                prog_frame = Frame(container)
+                prog_frame.pack(fill="x", pady=5)
+
+                prog_tree = ttk.Treeview(
+                    prog_frame,
+                    columns=("Program Code",),
+                    show="headings",
+                    height=4
+                )
+
+                prog_scroll = Scrollbar(prog_frame, orient="vertical",
+                                        command=prog_tree.yview)
+                prog_tree.configure(yscrollcommand=prog_scroll.set)
+
+                prog_tree.pack(side="left", fill=BOTH, expand=True)
+                prog_scroll.pack(side="right", fill="y")
+
+                prog_tree.heading("Program Code", text="Program Code")
+                prog_tree.column("Program Code", width=250, anchor=CENTER)
+
+                for row in programs_to_delete:
+                    prog_tree.insert("", END, values=(row[1],))
+
+            if students_to_delete:
+
+                Label(container, text=f"{len(students_to_delete)} Students", fg="blue", bg=bg_color)\
+                    .pack(pady=(10, 0))
+
+                stu_frame = Frame(container)
+                stu_frame.pack(fill=BOTH, expand=True, pady=5)
+
+                stu_tree = ttk.Treeview(
+                    stu_frame,
+                    columns=("Student ID", "Program Code"),
+                    show="headings",
+                    height=6
+                )
+
+                stu_scroll = Scrollbar(stu_frame, orient="vertical",
+                                    command=stu_tree.yview)
+                stu_tree.configure(yscrollcommand=stu_scroll.set)
+
+                stu_tree.pack(side="left", fill=BOTH, expand=True)
+                stu_scroll.pack(side="right", fill="y")
+
+                stu_tree.heading("Student ID", text="Student ID")
+                stu_tree.heading("Program Code", text="Program Code")
+
+                stu_tree.column("Student ID", width=150, anchor=CENTER)
+                stu_tree.column("Program Code", width=150, anchor=CENTER)
+
+                for row in students_to_delete:
+                    stu_tree.insert("", END, values=(row[0], row[3]))
+
+            if not programs_to_delete and not students_to_delete:
+                preview_window.geometry("480x150")
+                Label(container,
+                    text="No dependent records found.",
+                    bg=bg_color).pack(pady=10)
+
+        btn_frame = Frame(preview_window, bg=bg_color)
+        btn_frame.pack(pady=(5,10))
+
+        def confirm_delete():
+
             if search_by_Student:
                 CsvDelete.student(data_id)
                 search_student()
-                notify = f"Student {data_id} "
+
             elif search_by_Program:
-                if CsvSearch.studentProgram(data_id):
-                    for student in CsvSearch.studentProgram(data_id):
-                        CsvDelete.student(student[0])
+                for student in students_to_delete:
+                    CsvDelete.student(student[0])
                 CsvDelete.program(data_id)
                 search_program()
-                notify = f"Program {data_id} "
+
             elif search_by_College:
-                if CsvSearch.studentCollege(data_id):
-                    for student in CsvSearch.studentCollege(data_id):
-                        CsvDelete.student(student[0])
-                if CsvSearch.programCollege(data_id):
-                    for program in CsvSearch.programCollege(data_id):
-                        CsvDelete.program(program[1])
+                for student in students_to_delete:
+                    CsvDelete.student(student[0])
+                for program in programs_to_delete:
+                    CsvDelete.program(program[1])
                 CsvDelete.college(data_id)
                 search_college()
-                notify = f"College {data_id} "
-            
-            show_notif (f"{notify} deleted successfully!", color="#e74c3c")
+
+            preview_window.destroy()
+            show_notif(f"{data_id} deleted successfully!", color="#e74c3c")
+
+        Button(btn_frame,
+            text="Confirm",
+            bg="#e74c3c",
+            fg="white",
+            width=12,
+            command=confirm_delete).pack(side=LEFT, padx=10)
+
+        Button(btn_frame,
+            text="Cancel",
+            width=12,
+            command=preview_window.destroy).pack(side=LEFT)
 
     def open_student_form(student_data=None):
         is_edit = student_data is not None
