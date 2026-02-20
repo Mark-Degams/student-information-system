@@ -29,21 +29,27 @@ def student_system_gui():
     title = Label(
         header,
         text="Student Information System",
-        font=("Arial", 12, "bold"),
+        font=("Helvetica", 12, "bold"),
         bg="#B90000",
-        fg="white"
+        fg="#FFD700"
     )
     title.grid(row=0, column=0, sticky="w", padx=10, pady=10)
 
     button_frame = Frame(header, bg="#B90000")
     button_frame.grid(row=0, column=1, sticky="e", padx=20)
 
-    button_search_student = Button(button_frame, text="Student", bg="#B90000", relief=FLAT)
-    button_search_program = Button(button_frame, text="Program", bg="#B90000", relief=FLAT)
-    button_search_college = Button(button_frame, text="College", bg="#B90000", relief=FLAT)
-    button_search_student.pack(side=LEFT, padx=5)
-    button_search_program.pack(side=LEFT, padx=5)
-    button_search_college.pack(side=LEFT, padx=5)
+    button_search_student = Button(button_frame, text="Student", bg="#ffffff",fg = "#000000")
+    button_search_program = Button(button_frame, text="Program", bg="#B90000",fg = "#FFD700")
+    button_search_college = Button(button_frame, text="College", bg="#B90000",fg = "#FFD700")
+
+    header_buttons = [button_search_student, button_search_program, button_search_college]
+    for buttons in header_buttons:
+        buttons.pack(side=LEFT, padx=2)
+        buttons.config(font=("Helvetica", 9), 
+                       relief= FLAT, overrelief= FLAT,
+                       activebackground="#B90000", 
+                       bd=0, highlightthickness=0, borderwidth=0,
+                       width=8)
 
     input_frame = Frame(window, bg=bg_color, width=575)
     input_frame.pack(pady=10)
@@ -100,7 +106,7 @@ def student_system_gui():
         input_text = input_entry.get().strip()
 
         def display_result(data):
-            if data is None:
+            if data is None or data == []:
                 Label(output_frame, text="No results found.", bg=bg_color, fg="Red", font=("Arial", 12)).pack()
                 return
             if not isinstance(data, list): data = [data]
@@ -128,20 +134,31 @@ def student_system_gui():
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
 
         result = None
-        if CsvSearch.studentID(input_text):
-            result = CsvSearch.studentID(input_text)
-        elif CsvSearch.studentName(input_text):
-            result = CsvSearch.studentName(input_text)
-        elif CsvSearch.studentProgram(input_text):
-            result = CsvSearch.studentProgram(input_text)
-        elif CsvSearch.studentCollege(input_text):
-            result = CsvSearch.studentCollege(input_text)
-        elif CsvSearch.studentYear(input_text):
-            result = CsvSearch.studentYear(input_text)
-        elif input_text.lower() in ["male", "female", "m", "f"]:
-            result = CsvSearch.studentGender(input_text)
-        elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter Student Info...":
-            result = CsvRead.student()[1:]
+
+        if search_by_student_ID:
+            students = CsvRead.student()[1:]
+            result = [row for row in students if input_text.lower() in row[0].lower()]
+        elif search_by_student_name:
+            students = CsvRead.student()[1:]
+            result = [row for row in students if input_text.lower() in row[1].lower() or input_text.lower() in row[2].lower()]
+        elif search_by_student_program:
+            students = CsvRead.student()[1:]
+            result = [row for row in students if input_text.lower() in row[3].lower()]
+        else:
+            if CsvSearch.studentID(input_text):
+                result = CsvSearch.studentID(input_text)
+            elif CsvSearch.studentName(input_text):
+                result = CsvSearch.studentName(input_text)
+            elif CsvSearch.studentProgram(input_text):
+                result = CsvSearch.studentProgram(input_text)
+            elif CsvSearch.studentCollege(input_text):
+                result = CsvSearch.studentCollege(input_text)
+            elif CsvSearch.studentYear(input_text):
+                result = CsvSearch.studentYear(input_text)
+            elif input_text.lower() in ["male", "female", "m", "f"]:
+                result = CsvSearch.studentGender(input_text)
+            elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter Student Info...":
+                result = CsvRead.student()[1:]
 
         display_result(result)
 
@@ -152,7 +169,7 @@ def student_system_gui():
         input_text = input_entry.get().strip()
 
         def display_result(data):
-            if data is None:
+            if data is None or data == []:
                 Label(output_frame, text="No results found.", bg=bg_color, fg="Red", font=("Arial", 12)).pack()
                 return
             if not isinstance(data, list): data = [data]
@@ -177,14 +194,25 @@ def student_system_gui():
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
 
         result = None
-        if CsvSearch.programCode(input_text):
-            result = [CsvSearch.programCode(input_text)]
-        elif CsvSearch.programName(input_text):
-            result = CsvSearch.programName(input_text)
-        elif CsvSearch.programCollege(input_text):
-            result = CsvSearch.programCollege(input_text)
-        elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter Program Info...":
-            result = CsvRead.program()[1:]
+
+        if search_by_program_code:
+            programs = CsvRead.program()[1:]
+            result = [row for row in programs if input_text.lower() in row[1].lower()]
+        elif search_by_program_name:
+            programs = CsvRead.program()[1:]
+            result = [row for row in programs if input_text.lower() in row[2].lower()]
+        elif search_by_program_college:
+            programs = CsvRead.program()[1:]
+            result = [row for row in programs if input_text.lower() in row[0].lower()]
+        else:
+            if CsvSearch.programCode(input_text):
+                result = [CsvSearch.programCode(input_text)]
+            elif CsvSearch.programName(input_text):
+                result = CsvSearch.programName(input_text)
+            elif CsvSearch.programCollege(input_text):
+                result = CsvSearch.programCollege(input_text)
+            elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter Program Info...":
+                result = CsvRead.program()[1:]
 
         display_result(result)
 
@@ -195,7 +223,7 @@ def student_system_gui():
         input_text = input_entry.get().strip()
         
         def display_result(data):
-            if data is None:
+            if data is None or data == []:
                 Label(output_frame, text="No results found.", bg=bg_color, fg="Red", font=("Arial", 12)).pack()
                 return
             if not isinstance(data, list): data = [data]
@@ -218,52 +246,128 @@ def student_system_gui():
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
 
         result = None
-        if CsvSearch.collegeCode(input_text):
-            result = [CsvSearch.collegeCode(input_text)]
-        elif CsvSearch.collegeName(input_text):
-            result = CsvSearch.collegeName(input_text)
-        elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter College Info...":
-            result = CsvRead.college()[1:]
+
+        if search_by_college_code:
+            college = CsvRead.college()[1:]
+            result = [row for row in college if input_text.lower() in row[0].lower()]
+        elif search_by_college_name:
+            college = CsvRead.college()[1:]
+            result = [row for row in college if input_text.lower() in row[1].lower()]
+        else:
+            if CsvSearch.collegeCode(input_text):
+                result = [CsvSearch.collegeCode(input_text)]
+            elif CsvSearch.collegeName(input_text):
+                result = CsvSearch.collegeName(input_text)
+            elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter College Info...":
+                result = CsvRead.college()[1:]
 
         display_result(result)
 
-    def toggle_search_by():
+    def toggle_search_by(freeze = False):
         window.focus_set()
+        global search_by_Student, search_by_Program, search_by_College
         button_name = "Search by: "
 
-        if  toggle_search_by_value == 3: toggle_search_by_value = 1
-        else: toggle_search_by_value += 1
+        if search_by_Student:
+            global search_by_student_ID, search_by_student_name, search_by_student_program, toggle_search_by_student_value
 
-        match toggle_search_by_value:
-            case 1: 
-                search_by_Student = True
-                search_by_Program = False
-                search_by_College = False
-                button_name += "Student"
-                toggle_sort_button.config(text="Sort by: Student Id" ,command=toggle_sort_Student)
-                add_placeholder(input_entry, "Enter Student Info...")
-                toggle_sort_Student(True)
-            case 2:
-                search_by_Student = False
-                search_by_Program = True
-                search_by_College = False
-                button_name += "Program"
-                toggle_sort_button.config(text="Sort by: Program Code", command=toggle_sort_Program)
-                add_placeholder(input_entry, "Enter Program Info...")
-                toggle_sort_Program(True)
-            case 3:
-                search_by_Student = False
-                search_by_Program = False
-                search_by_College = True
-                button_name += "College"
-                toggle_sort_button.config(text="Sort by: College Code", command=toggle_sort_College)
-                add_placeholder(input_entry, "Enter College Info...")
-                toggle_sort_College(True)
+            if not freeze:
+                if toggle_search_by_student_value == 4: toggle_search_by_student_value = 1
+                else: toggle_search_by_student_value += 1
+
+            match toggle_search_by_student_value:
+                case 1:
+                    search_by_student_ID = False
+                    search_by_student_name = False
+                    search_by_student_program = False
+                    button_name += "Default"
+                    add_placeholder(input_entry, "Enter Student Info...")
+                case 2:
+                    search_by_student_ID = True
+                    search_by_student_name = False
+                    search_by_student_program = False
+                    button_name += "ID"
+                    add_placeholder(input_entry, "Enter Student ID...")
+                case 3:
+                    search_by_student_ID = False
+                    search_by_student_name = True
+                    search_by_student_program = False
+                    button_name += "Name"
+                    add_placeholder(input_entry, "Enter Student Name...")
+                case 4:
+                    search_by_student_ID = False
+                    search_by_student_name = False
+                    search_by_student_program = True
+                    button_name += "Program"
+                    add_placeholder(input_entry, "Enter Student Program...")
+
+        elif search_by_Program: 
+            global search_by_program_code, search_by_program_name, search_by_program_college, toggle_search_by_program_value
+
+            if not freeze:
+                if toggle_search_by_program_value == 4: toggle_search_by_program_value = 1
+                else: toggle_search_by_program_value += 1
+
+            match toggle_search_by_program_value:
+                case 1:
+                    search_by_program_code = False
+                    search_by_program_name = False
+                    search_by_program_college = False
+                    button_name += "Default"
+                    add_placeholder(input_entry, "Enter Program Info...")
+                case 2:
+                    search_by_program_code = True
+                    search_by_program_name = False
+                    search_by_program_college = False
+                    button_name += "Code"
+                    add_placeholder(input_entry, "Enter Program Code...")
+                case 3:
+                    search_by_program_code = False
+                    search_by_program_name = True
+                    search_by_program_college = False
+                    button_name += "Name"
+                    add_placeholder(input_entry, "Enter Program Name...")
+                case 4:
+                    search_by_program_code = False
+                    search_by_program_name = False
+                    search_by_program_college = True
+                    button_name += "College"
+                    add_placeholder(input_entry, "Enter Program College...")
+
+        else:
+            global search_by_college_code, search_by_college_name, toggle_search_by_college_value
+
+            if not freeze:
+                if toggle_search_by_college_value ==  3: toggle_search_by_college_value = 1
+                else: toggle_search_by_college_value += 1
+
+            match toggle_search_by_college_value:
+                case 1:
+                    search_by_college_code = False
+                    search_by_college_name = False
+                    button_name += "Default"
+                    add_placeholder(input_entry, "Enter College Info...")
+                case 2: 
+                    search_by_college_code = True
+                    search_by_college_name = False
+                    button_name += "Code"
+                    add_placeholder(input_entry, "Enter College Code...")
+                case 3:
+                    search_by_college_code = False
+                    search_by_college_name = True
+                    button_name += "Name"
+                    add_placeholder(input_entry, "Enter College Name...")
 
         toggle_search_button.config(text=button_name)
     
     def toggle_search(index = 1):
         global search_by_Student, search_by_Program, search_by_College
+        global toggle_search_by_student_value, toggle_search_by_program_value, toggle_search_by_college_value
+        toggle_search_by_student_value, toggle_search_by_program_value, toggle_search_by_college_value = 1, 1, 1
+
+        button_search_student.config(bg= "#B90000", fg= "#FFD700")
+        button_search_program.config(bg= "#B90000", fg= "#FFD700")
+        button_search_college.config(bg= "#B90000", fg= "#FFD700")
         
         input_value = input_entry.get()
         new_placeholder = False
@@ -276,22 +380,28 @@ def student_system_gui():
 
         match index:
             case 1:
+                button_search_student.config(bg= "#ffffff", fg="#000000")
                 search_by_Program = False
                 search_by_College = False
                 search_by_Student = True
                 if new_placeholder: add_placeholder(input_entry, "Enter Student Info...")
+                toggle_search_by(True)
                 toggle_sort_Student(True)
             case 2:
+                button_search_program.config(bg= "#ffffff", fg="#000000")
                 search_by_Program = True
                 search_by_College = False
                 search_by_Student = False
                 if new_placeholder: add_placeholder(input_entry, "Enter Program Info...")
+                toggle_search_by(True)
                 toggle_sort_Program(True)
             case 3:
+                button_search_college.config(bg= "#ffffff", fg="#000000")
                 search_by_Program = False
                 search_by_College = True
                 search_by_Student = False
                 if new_placeholder: add_placeholder(input_entry, "Enter College Info...")
+                toggle_search_by(True)
                 toggle_sort_College(True)
 
     def toggle_sort_Student(freeze = False):
@@ -854,10 +964,9 @@ def student_system_gui():
 
     return window
 
+toggle_search_by_student_value, toggle_search_by_program_value, toggle_search_by_college_value = 1, 1, 1
 toggle_sort_student, toggle_sort_program, toggle_sort_college = 1, 1, 1
 search_by_Student, search_by_Program, search_by_College = True, False, False
-
-toggle_search_by_value = 1
 
 search_by_student_ID, search_by_student_name, search_by_student_program = False, False, False
 sort_by_name, sort_by_year, sort_by_program = False, False, False
