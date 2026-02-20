@@ -20,26 +20,43 @@ def student_system_gui():
     icon = PhotoImage(file=icon_path)
     window.iconphoto(True, icon)
 
-    title = Label(window, 
-                text="Welcome to the Student Information System", 
-                font=("Arial", 16), 
-                bg=bg_color, 
-                fg="Black",
-                pady=10)
-    title.pack()
+    header = Frame(window, height=30, bg="#B90000")
+    header.pack(fill=X)
 
+    header.grid_columnconfigure(0, weight=3)
+    header.grid_columnconfigure(1, weight=1) 
+
+    title = Label(
+        header,
+        text="Student Information System",
+        font=("Arial", 12, "bold"),
+        bg="#B90000",
+        fg="white"
+    )
+    title.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+
+    button_frame = Frame(header, bg="#B90000")
+    button_frame.grid(row=0, column=1, sticky="e", padx=20)
+
+    button_search_student = Button(button_frame, text="Student", bg="#B90000", relief=FLAT)
+    button_search_program = Button(button_frame, text="Program", bg="#B90000", relief=FLAT)
+    button_search_college = Button(button_frame, text="College", bg="#B90000", relief=FLAT)
+    button_search_student.pack(side=LEFT, padx=5)
+    button_search_program.pack(side=LEFT, padx=5)
+    button_search_college.pack(side=LEFT, padx=5)
 
     input_frame = Frame(window, bg=bg_color, width=575)
     input_frame.pack(pady=10)
 
-    toggle_search_button = Button(input_frame, width=16,text="Search by: Students")
-    toggle_search_button.pack(padx=5, side=LEFT)
+    toggle_search_button = Button(input_frame, width=16,text="Search by: Default")
     input_entry = Entry(input_frame, width=30, font=("Arial", 12))
-    input_entry.pack(side=LEFT, padx=5)
     add_button = Button(input_frame,  text = "+", width=2, height=1)
-    add_button.pack(side=LEFT)
     toggle_sort_button = Button(input_frame, width=18, text="Sort by: Student ID")
-    toggle_sort_button.pack(padx=5, side=LEFT)
+
+    toggle_search_button.pack(side=LEFT, padx=5)
+    input_entry.pack(side=LEFT, padx=5)
+    add_button.pack(side=LEFT)
+    toggle_sort_button.pack(side=LEFT, padx=5)
 
     output_frame = Frame(window, bg=bg_color)
     output_frame.pack(pady=20)
@@ -55,7 +72,6 @@ def student_system_gui():
                 search_student()
                 show_notif("100 Random Students Are Added")
 
-               
         if len(CsvRead.student()) == 1:
             generate_student()
  
@@ -211,15 +227,14 @@ def student_system_gui():
 
         display_result(result)
 
-    def toggle_search():
+    def toggle_search_by():
         window.focus_set()
-        global toggle_search_value, search_by_Student, search_by_Program, search_by_College
         button_name = "Search by: "
 
-        if  toggle_search_value == 3: toggle_search_value = 1
-        else: toggle_search_value += 1
+        if  toggle_search_by_value == 3: toggle_search_by_value = 1
+        else: toggle_search_by_value += 1
 
-        match toggle_search_value:
+        match toggle_search_by_value:
             case 1: 
                 search_by_Student = True
                 search_by_Program = False
@@ -246,7 +261,39 @@ def student_system_gui():
                 toggle_sort_College(True)
 
         toggle_search_button.config(text=button_name)
+    
+    def toggle_search(index = 1):
+        global search_by_Student, search_by_Program, search_by_College
         
+        input_value = input_entry.get()
+        new_placeholder = False
+        if input_value == "": new_placeholder = True
+        elif input_value == "Enter Student Info...": new_placeholder = True
+        elif input_value == "Enter Program Info...": new_placeholder = True
+        elif input_value == "Enter College Info...": new_placeholder = True
+
+        if new_placeholder: window.focus_set()
+
+        match index:
+            case 1:
+                search_by_Program = False
+                search_by_College = False
+                search_by_Student = True
+                if new_placeholder: add_placeholder(input_entry, "Enter Student Info...")
+                toggle_sort_Student(True)
+            case 2:
+                search_by_Program = True
+                search_by_College = False
+                search_by_Student = False
+                if new_placeholder: add_placeholder(input_entry, "Enter Program Info...")
+                toggle_sort_Program(True)
+            case 3:
+                search_by_Program = False
+                search_by_College = True
+                search_by_Student = False
+                if new_placeholder: add_placeholder(input_entry, "Enter College Info...")
+                toggle_sort_College(True)
+
     def toggle_sort_Student(freeze = False):
         global sort_by_year, sort_by_name, sort_by_program, toggle_sort_student
         button_name = "Sort by: "
@@ -742,7 +789,7 @@ def student_system_gui():
         y = add_button.winfo_rooty() + add_button.winfo_height()
         add_menu.tk_popup(x, y)
 
-    def show_notif(message, color="#2ecc71"):
+    def show_notif(message, color="#00e35f"):
         toast_label = Label(window, text=message, bg=color, fg=bg_color, font=("Arial", 10, "bold"), pady=5)
         toast_label.pack(side=BOTTOM, fill=X)
 
@@ -793,8 +840,11 @@ def student_system_gui():
     window.bind("<Button-1>", remove_focus)
     input_entry.bind("<KeyRelease>", on_typing)
 
-    toggle_search_button.config(command=toggle_search)
+    toggle_search_button.config(command=toggle_search_by)
     toggle_sort_button.config(command=toggle_sort_Student)
+    button_search_student.config(command=lambda: toggle_search(1))
+    button_search_program.config(command=lambda: toggle_search(2))
+    button_search_college.config(command=lambda: toggle_search(3))
     add_button.config(command=show_add_menu)
 
     add_placeholder(input_entry, "Enter Student Info...")
@@ -804,10 +854,18 @@ def student_system_gui():
 
     return window
 
-toggle_search_value = 1
 toggle_sort_student, toggle_sort_program, toggle_sort_college = 1, 1, 1
 search_by_Student, search_by_Program, search_by_College = True, False, False
+
+toggle_search_by_value = 1
+
+search_by_student_ID, search_by_student_name, search_by_student_program = False, False, False
 sort_by_name, sort_by_year, sort_by_program = False, False, False
+
+search_by_program_code, search_by_program_name, search_by_program_college = False, False, False
 sort_by_program_code, sort_by_program_name = False, False
+
+search_by_college_code, search_by_college_name = False, False
 sort_by_college_name = False
+
 search_job = None

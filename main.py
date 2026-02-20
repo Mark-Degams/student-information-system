@@ -7,7 +7,7 @@ def initialize_csv_files():
     files = {
         "College.csv": ["College Code", "College Name"],
         "Program.csv": ["College Code", "Program Code", "Program Name"],
-        "Student.csv": ["Student ID", "Last Name", "First Name", "Program Code", "Year Level", "Gender"]
+        "Student.csv": ["Student ID", "Last Name", "First Name", "Program Code", "Year", "Gender"]
     }
 
     if not os.path.exists(folder):
