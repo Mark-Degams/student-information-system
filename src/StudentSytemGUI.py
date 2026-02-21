@@ -69,16 +69,68 @@ def student_system_gui():
     # --- GUI Functions ---
 
     def empty_csv_check():
+        if len(CsvRead.student()) > 1:
+            return
 
-        def generate_student():
-            response = messagebox.askyesno("Generate Random Student", "Its look like your CSV Files are empty, do you want to generate random student?")
-            if response:
-                RanCsvGen.generate_random_student()
-                search_student()
-                show_notif("100 Random Students Are Added")
+        overlay = Toplevel(window)
+        overlay.overrideredirect(True)
+        overlay.configure(bg="black")
+        
+        ox, oy = window.winfo_rootx(), window.winfo_rooty()
+        ow, oh = window.winfo_width(), window.winfo_height()
+        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
 
-        if len(CsvRead.student()) == 1:
-            generate_student()
+        modal = Toplevel(window)
+        modal.withdraw()
+        modal.overrideredirect(True)
+        modal.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
+        
+        fw, fh = 350, 180 
+        modal.geometry(f"{fw}x{fh}+{ox + (ow//2) - (fw//2)}+{oy + (oh//2) - (fh//2)}")
+
+        def hide_modal():
+            window.unbind("<Configure>")
+            modal.grab_release()
+            modal.destroy()
+            overlay.destroy()
+
+        def sync_positions(event=None):
+            if modal.winfo_exists() and modal.winfo_viewable():
+                nox, noy = window.winfo_rootx(), window.winfo_rooty()
+                now, noh = window.winfo_width(), window.winfo_height()
+                overlay.geometry(f"{now}x{noh}+{nox}+{noy}")
+                overlay.lift()
+                modal.geometry(f"+{nox + (now // 2) - (fw // 2)}+{noy + (noh // 2) - (fh // 2)}")
+                modal.lift()
+
+        window.bind("<Configure>", sync_positions)
+
+        container = Frame(modal, bg=bg_color, padx=20, pady=20)
+        container.pack(fill=BOTH, expand=True)
+
+        Label(container, text="Generate Data?", bg=bg_color, font=("Arial", 11, "bold"), fg="#333").pack(pady=(0, 10))
+        Label(container, text="It looks like your CSV files are empty.\nWould you like to generate 100\nrandom student records?", 
+              bg=bg_color, justify=CENTER, font=("Arial", 9)).pack(pady=5)
+
+        btn_frame = Frame(container, bg=bg_color)
+        btn_frame.pack(side=BOTTOM, pady=(10, 0))
+
+        def on_yes():
+            RanCsvGen.generate_random_student()
+            search_student()
+            hide_modal()
+            show_notif("100 Random Students Added")
+
+        Button(btn_frame, text="Yes, Generate", bg="#2ecc71", fg="white", width=12, relief="flat", command=on_yes).pack(side=LEFT, padx=5)
+        Button(btn_frame, text="No, Thanks", bg="#95a5a6", fg="white", width=12, relief="flat", command=hide_modal).pack(side=LEFT, padx=5)
+
+        # Activation
+        overlay.update_idletasks()
+        overlay.deiconify()
+        overlay.attributes("-alpha", 0.5)
+        modal.deiconify()
+        modal.lift()
+        modal.grab_set()
  
     def add_placeholder(entry, text):
         entry.delete(0, END)
@@ -504,14 +556,49 @@ def student_system_gui():
 
     def delete_confirm(data_id):
 
-        preview_window = Toplevel(window)
-        preview_window.title("Confirm Delete")
-        preview_window.geometry("420x480")
-        #preview_window.resizable(False, False) 
-        preview_window.grab_set()
+        # preview_window = Toplevel(window)
+        # preview_window.title("Confirm Delete")
+        # preview_window.geometry("420x480")
+        # preview_window.resizable(False, False) 
+        # preview_window.grab_set()
 
-        bg_color = "#f5f6fa"
-        preview_window.configure(bg=bg_color)
+        overlay = Toplevel(window)
+        overlay.overrideredirect(True)
+        overlay.configure(bg="black")
+        overlay.attributes("-alpha", 0.5)
+        
+        ox = window.winfo_rootx()
+        oy = window.winfo_rooty()
+        ow = window.winfo_width()
+        oh = window.winfo_height()
+        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+
+        preview_window = Toplevel(window)
+        preview_window.overrideredirect(True)
+        preview_window.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
+        
+        fw, fh = 420, 480 
+
+        def hide_modal():
+            window.unbind("<Configure>") # Stop syncing when closed
+            preview_window.grab_release()
+            preview_window.destroy()
+            overlay.destroy()
+
+        def sync_positions(event=None):
+            if preview_window.winfo_exists() and preview_window.winfo_viewable():
+                ox = window.winfo_rootx()
+                oy = window.winfo_rooty()
+                ow = window.winfo_width()
+                oh = window.winfo_height()
+                overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+                overlay.deiconify()
+                fx = ox + (ow // 2) - (fw // 2)
+                fy = oy + (oh // 2) - (fh // 2)
+                preview_window.geometry(f"+{fx}+{fy}")
+                preview_window.deiconify()
+
+        window.bind("<Configure>", sync_positions)
 
         container = Frame(preview_window, bg=bg_color)
         container.pack(fill=BOTH, expand=True, padx=15, pady=15)
@@ -522,7 +609,7 @@ def student_system_gui():
         # STUDENT DELETE
 
         if search_by_Student:
-            preview_window.geometry("420x130")
+            fw, fh = 420, 130
             Label(
                 container,
                 text=f"⚠ Are you sure you want to delete Student?",
@@ -539,7 +626,7 @@ def student_system_gui():
         # PROGRAM DELETE
 
         elif search_by_Program:
-            preview_window.geometry("300x250")
+            fw, fh = 300, 250
 
             all_students = CsvRead.student()[1:]
             students_to_delete = [row for row in all_students if row[3] == data_id]
@@ -576,7 +663,7 @@ def student_system_gui():
                     tree.insert("", END, values=(row[0],))
 
             else:
-                preview_window.geometry("300x150")
+                fw, fh = 300, 150
                 Label(container, text="No students affected.", bg=bg_color).pack(pady=(10,0))
 
         # COLLEGE DELETE
@@ -598,8 +685,7 @@ def student_system_gui():
             ).pack(pady=5)
 
             if programs_to_delete:
-                if not students_to_delete:
-                    preview_window.geometry("480x250")
+                fw, fh = (480, 400) if students_to_delete else (480, 250)
 
                 Label(container, text=f"{len(programs_to_delete)} Programs", fg="blue", bg=bg_color)\
                     .pack(pady=(10, 0))
@@ -639,7 +725,7 @@ def student_system_gui():
                     stu_frame,
                     columns=("Student ID", "Program Code"),
                     show="headings",
-                    height=6
+                    height=4
                 )
 
                 stu_scroll = Scrollbar(stu_frame, orient="vertical",
@@ -659,13 +745,17 @@ def student_system_gui():
                     stu_tree.insert("", END, values=(row[0], row[3]))
 
             if not programs_to_delete and not students_to_delete:
-                preview_window.geometry("480x150")
+                fw, fh = 480, 150
                 Label(container,
                     text="No dependent records found.",
                     bg=bg_color).pack(pady=10)
 
         btn_frame = Frame(preview_window, bg=bg_color)
         btn_frame.pack(pady=(5,10))
+
+        fx = ox + (ow // 2) - (fw // 2)
+        fy = oy + (oh // 2) - (fh // 2)
+        preview_window.geometry(f"{fw}x{fh}+{fx}+{fy}")
 
         def confirm_delete():
 
@@ -687,36 +777,56 @@ def student_system_gui():
                 CsvDelete.college(data_id)
                 search_college()
 
-            preview_window.destroy()
+            hide_modal()
             show_notif(f"{data_id} deleted successfully!", color="#e74c3c")
 
-        Button(btn_frame,
-            text="Confirm",
-            bg="#e74c3c",
-            fg="white",
-            width=12,
-            command=confirm_delete).pack(side=LEFT, padx=10)
+        Button(btn_frame, text="Confirm", bg="#e74c3c", fg="white", width=12, command=confirm_delete).pack(side=LEFT, padx=10)
+        Button(btn_frame, text="Cancel", width=12, command=hide_modal).pack(side=LEFT)
 
-        Button(btn_frame,
-            text="Cancel",
-            width=12,
-            command=preview_window.destroy).pack(side=LEFT)
+        overlay.update_idletasks()
+        overlay.deiconify()
+        overlay.attributes("-alpha", 0.5)
+        
+        preview_window.deiconify()
+        preview_window.lift()
+        preview_window.focus_force()
+        preview_window.grab_set()
 
     def open_student_form(student_data=None):
         is_edit = student_data is not None
+        
+        overlay = Toplevel(window)
+        overlay.overrideredirect(True)
+        overlay.configure(bg="black")
+        overlay.attributes("-alpha", 0.5)
+        
+        ox = window.winfo_rootx()
+        oy = window.winfo_rooty()
+        ow = window.winfo_width()
+        oh = window.winfo_height()
+        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+
         form_window = Toplevel(window)
-        form_window.title("Edit Student Information" if is_edit else "Add New Student")
-        form_window.geometry("350x250")
-        form_window.config(bg=bg_color, padx=20, pady=20)
-        form_window.resizable(False, False)
+        form_window.overrideredirect(True)
+        form_window.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
+        
+        fw, fh = 350, 270 
+        fx = ox + (ow // 2) - (fw // 2)
+        fy = oy + (oh // 2) - (fh // 2)
+        form_window.geometry(f"{fw}x{fh}+{fx}+{fy}")
+
+        overlay.update_idletasks()
+        overlay.deiconify()
+        form_window.update_idletasks()
+        form_window.deiconify()
+        
         form_window.grab_set()
 
-        college_codes = [row[0] for row in CsvRead.college()[1:]]
-        existing_ids = [row[0] for row in CsvRead.student()[1:]]
-        tooltip_window = None
-
-        for i in range(6):
-            form_window.grid_columnconfigure(i, weight=1)
+        def hide_modal():
+            if tooltip_window: tooltip_window.destroy()
+            form_window.grab_release()
+            form_window.destroy()
+            overlay.destroy()
 
         def show_tooltip(text, event):
             nonlocal tooltip_window
@@ -739,35 +849,78 @@ def student_system_gui():
                 tooltip_window.destroy()
                 tooltip_window = None
 
-        Label(form_window, text="Student ID (YYYY-NNNN)", bg=bg_color, font=("Arial", 8, "bold")).grid(row=0, column=0, columnspan=6, sticky=W)
-        id_entry = Entry(form_window, highlightthickness=0)
-        id_entry.grid(row=1, column=0, columnspan=6, pady=(0, 10), sticky=EW)
+        def start_drag(event):
+            form_window._x, form_window._y = event.x, event.y
+
+        def do_drag(event):
+            nx = form_window.winfo_x() + event.x - form_window._x
+            ny = form_window.winfo_y() + event.y - form_window._y
+            form_window.geometry(f"+{max(ox, min(nx, ox + ow - fw))}+{max(oy, min(ny, oy + oh - fh))}")
+
+        def sync_positions(event=None):
+            if form_window.winfo_exists() and form_window.winfo_viewable():
+                ox = window.winfo_rootx()
+                oy = window.winfo_rooty()
+                ow = window.winfo_width()
+                oh = window.winfo_height()
+                overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+                overlay.deiconify()
+                fx = ox + (ow // 2) - (fw // 2)
+                fy = oy + (oh // 2) - (fh // 2)
+                form_window.geometry(f"+{fx}+{fy}")
+                form_window.deiconify()
+
+        container = Frame(form_window, bg=bg_color, padx=20, pady=15)
+        container.pack(fill=BOTH, expand=True)
+        container.bind("<Button-1>", start_drag); container.bind("<B1-Motion>", do_drag)
+        window.bind("<Configure>", sync_positions)
+
+        college_codes = [row[0] for row in CsvRead.college()[1:]]
+        existing_ids = [row[0] for row in CsvRead.student()[1:]]
+        tooltip_window = None
+
+        for i in range(6):
+            container.grid_columnconfigure(i, weight=1)
+
+        Label(container, text="Edit Student" if is_edit else "Create Student", bg=bg_color, 
+              font=("Arial", 10, "bold")).grid(row=0, column=0, columnspan=6, pady=(0, 10))
+
+        Label(container, text="Student ID (YYYY-NNNN)", bg=bg_color, 
+              font=("Arial", 8, "bold")).grid(row=1, column=0, columnspan=6, sticky=W)
+        id_entry = Entry(container, highlightthickness=0, bd=1, relief="solid")
+        id_entry.grid(row=2, column=0, columnspan=6, pady=(0, 10), sticky=EW)
+        
         if is_edit:
             id_entry.insert(0, student_data[0])
             id_entry.config(state='readonly', readonlybackground="#f0f0f0")
 
-        Label(form_window, text="Last Name", bg=bg_color).grid(row=2, column=0, columnspan=3, sticky=W)
-        Label(form_window, text="First Name", bg=bg_color).grid(row=2, column=3, columnspan=3, sticky=W)
-        last_entry = Entry(form_window, highlightthickness=0)
-        last_entry.grid(row=3, column=0, columnspan=3, sticky=EW, padx=(0, 5), pady=(0, 10))
-        first_entry = Entry(form_window, highlightthickness=0)
-        first_entry.grid(row=3, column=3, columnspan=3, sticky=EW, pady=(0, 10))
+        Label(container, text="Last Name", bg=bg_color).grid(row=3, column=0, columnspan=3, sticky=W)
+        Label(container, text="First Name", bg=bg_color).grid(row=3, column=3, columnspan=3, sticky=W)
+        last_entry = Entry(container, highlightthickness=0, bd=1, relief="solid")
+        last_entry.grid(row=4, column=0, columnspan=3, sticky=EW, padx=(0, 5), pady=(0, 10))
+        first_entry = Entry(container, highlightthickness=0, bd=1, relief="solid")
+        first_entry.grid(row=4, column=3, columnspan=3, sticky=EW, pady=(0, 10))
 
-        Label(form_window, text="College", bg=bg_color).grid(row=4, column=0, sticky=W)
-        col_box = ttk.Combobox(form_window, values=college_codes, state="readonly", width=7)
-        col_box.grid(row=5, column=0, sticky=W, padx=(0, 5))
+        Label(container, text="Col", bg=bg_color).grid(row=5, column=0, sticky=W)
+        Label(container, text="Program", bg=bg_color).grid(row=5, column=1, columnspan=2, sticky=W)
+        Label(container, text="Year", bg=bg_color).grid(row=5, column=3, sticky=W)
+        Label(container, text="Gender", bg=bg_color).grid(row=5, column=4, columnspan=2, sticky=W)
 
-        Label(form_window, text="Program", bg=bg_color).grid(row=4, column=1, columnspan=2, sticky=W)
-        prog_box = ttk.Combobox(form_window, state="readonly", width=12)
-        prog_box.grid(row=5, column=1, columnspan=2, sticky=EW, padx=(0, 5))
+        col_box = ttk.Combobox(container, values=college_codes, state="readonly", width=5)
+        col_box.grid(row=6, column=0, sticky=W, padx=(0, 5))
+        prog_box = ttk.Combobox(container, state="readonly", width=10)
+        prog_box.grid(row=6, column=1, columnspan=2, sticky=EW, padx=(0, 5))
+        year_box = ttk.Combobox(container, values=["1", "2", "3", "4", "5"], state="readonly", width=3)
+        year_box.grid(row=6, column=3, sticky=EW, padx=(0, 5))
+        gen_box = ttk.Combobox(container, values=["Male", "Female"], state="readonly", width=7)
+        gen_box.grid(row=6, column=4, columnspan=2, sticky=EW)
 
-        Label(form_window, text="Year", bg=bg_color).grid(row=4, column=3, sticky=W)
-        year_box = ttk.Combobox(form_window, values=["1", "2", "3", "4", "5"], state="readonly", width=3)
-        year_box.grid(row=5, column=3, sticky=EW, padx=(0, 5))
-
-        Label(form_window, text="Gender", bg=bg_color).grid(row=4, column=4, columnspan=2, sticky=W)
-        gen_box = ttk.Combobox(form_window, values=["Male", "Female"], state="readonly", width=7)
-        gen_box.grid(row=5, column=4, columnspan=2, sticky=EW)
+        container.bind("<Button-1>", start_drag)
+        container.bind("<B1-Motion>", do_drag)
+        for child in container.winfo_children():
+            if isinstance(child, Label):
+                child.bind("<Button-1>", start_drag)
+                child.bind("<B1-Motion>", do_drag)
 
         if is_edit:
             last_entry.insert(0, student_data[1])
@@ -783,7 +936,9 @@ def student_system_gui():
             gen_box.set("Male" if student_data[5].upper() == "M" else "Female")
 
         def validate(event=None):
-            id_val, last_val, first_val = id_entry.get().strip(), last_entry.get().strip(), first_entry.get().strip()
+            id_val = id_entry.get().strip()
+            last_val = last_entry.get().strip()
+            first_val = first_entry.get().strip()
             
             id_v, id_err = Constraints.validate_id(id_val, [] if is_edit else existing_ids)
             last_v, last_err = Constraints.validate_name(last_val)
@@ -811,7 +966,7 @@ def student_system_gui():
                 CsvWrite.student([new_student])
                 show_notif(f"Student {new_student[0]} created!")
                 
-            form_window.destroy()
+            hide_modal()
             if search_by_Student: search_student()
             elif search_by_Program: search_program()
             else: search_college()
@@ -838,31 +993,52 @@ def student_system_gui():
         for box in [prog_box, year_box, gen_box]: 
             box.bind("<<ComboboxSelected>>", validate)
 
-        btn_save = Button(form_window, text="Save Changes" if is_edit else "Add Student", 
-                        bg="#2ecc71", fg=bg_color, font=("Arial", 10, "bold"), 
+        btn_frame = Frame(container, bg=bg_color)
+        btn_frame.grid(row=7, column=0, columnspan=6, pady=(20, 0), sticky=EW)
+
+        btn_save = Button(btn_frame, text="Save Changes" if is_edit else "Add Student", 
+                        bg="#2ecc71", fg="white", font=("Arial", 9, "bold"), 
                         state=DISABLED, command=save)
-        btn_save.grid(row=6, column=0, columnspan=6, pady=20, sticky=EW)
+        btn_save.pack(side=RIGHT, padx=5)
+
+        btn_cancel = Button(btn_frame, text="Cancel", command=hide_modal, bg="#e74c3c", fg="white")
+        btn_cancel.pack(side=RIGHT, padx=5)
 
         validate()
-        form_window.protocol("WM_DELETE_WINDOW", lambda: (hide_tooltip(), form_window.destroy()))
-
+        
     def open_program_form(program_data=None):
         is_edit = program_data is not None
         old_code = program_data[1] if is_edit else None
         
+        overlay = Toplevel(window)
+        overlay.overrideredirect(True)
+        overlay.configure(bg="black")
+        overlay.attributes("-alpha", 0.5)
+        
+        ox = window.winfo_rootx()
+        oy = window.winfo_rooty()
+        ow = window.winfo_width()
+        oh = window.winfo_height()
+        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+
         form_window = Toplevel(window)
-        form_window.title("Edit Program" if is_edit else "Create Program")
-        form_window.geometry("400x200") 
-        form_window.config(bg=bg_color, padx=20, pady=15)
-        form_window.resizable(False, False)
+        form_window.overrideredirect(True)
+        form_window.config(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
+        
+        fw, fh = 320, 200 
+        fx, fy = ox + (ow // 2) - (fw // 2), oy + (oh // 2) - (fh // 2)
+        form_window.geometry(f"{fw}x{fh}+{fx}+{fy}")
+
+        overlay.update_idletasks()
+        overlay.deiconify()
+        form_window.update_idletasks()
+        form_window.deiconify()
         form_window.grab_set()
 
-        college_codes = [row[0] for row in CsvRead.college()[1:]]
-        existing_programs = [row[1] for row in CsvRead.program()[1:]]
-        tooltip_window = None
-
-        for i in range(4): 
-            form_window.grid_columnconfigure(i, weight=1)
+        def hide_modal():
+            if tooltip_window: tooltip_window.destroy()
+            form_window.destroy()
+            overlay.destroy()
 
         def show_tooltip(text, event):
             nonlocal tooltip_window
@@ -885,17 +1061,54 @@ def student_system_gui():
                 tooltip_window.destroy()
                 tooltip_window = None
 
-        Label(form_window, text="College Code", bg=bg_color, font=("Arial", 9, "bold")).grid(row=0, column=0, columnspan=2, sticky=W)
-        col_box = ttk.Combobox(form_window, values=college_codes, state="readonly")
-        col_box.grid(row=1, column=0, columnspan=2, pady=(2, 10), sticky=EW, padx=(0, 10))
+        def start_drag(event):
+            form_window._x, form_window._y = event.x, event.y
+        def do_drag(event):
+            nx = form_window.winfo_x() + event.x - form_window._x
+            ny = form_window.winfo_y() + event.y - form_window._y
+            form_window.geometry(f"+{max(ox, min(nx, ox + ow - fw))}+{max(oy, min(ny, oy + oh - fh))}")
+        def sync_positions(event=None):
+            if form_window.winfo_exists() and form_window.winfo_viewable():
+                ox = window.winfo_rootx()
+                oy = window.winfo_rooty()
+                ow = window.winfo_width()
+                oh = window.winfo_height()
+                overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+                overlay.deiconify()
+                fx = ox + (ow // 2) - (fw // 2)
+                fy = oy + (oh // 2) - (fh // 2)
+                form_window.geometry(f"+{fx}+{fy}")
+                form_window.deiconify()
 
-        Label(form_window, text="Program Code", bg=bg_color, font=("Arial", 9, "bold")).grid(row=0, column=2, columnspan=2, sticky=W)
-        code_entry = Entry(form_window, highlightthickness=0)
-        code_entry.grid(row=1, column=2, columnspan=2, pady=(2, 10), sticky=EW)
+        container = Frame(form_window, bg=bg_color, padx=20, pady=15)
+        container.pack(fill=BOTH, expand=True)
+        container.bind("<Button-1>", start_drag); container.bind("<B1-Motion>", do_drag)
+        window.bind("<Configure>", sync_positions)
 
-        Label(form_window, text="Program Name", bg=bg_color, font=("Arial", 9, "bold")).grid(row=2, column=0, columnspan=4, sticky=W)
-        name_entry = Entry(form_window, highlightthickness=0)
-        name_entry.grid(row=3, column=0, columnspan=4, pady=(2, 15), sticky=EW)
+        college_codes = [row[0] for row in CsvRead.college()[1:]]
+        existing_programs = [row[1] for row in CsvRead.program()[1:]]
+        tooltip_window = None
+
+        for i in range(6):
+            container.grid_columnconfigure(i, weight=1)
+
+        Label(container, text="Edit Program" if is_edit else "Create Program", bg=bg_color, 
+              font=("Arial", 10, "bold")).grid(row=0, column=0, columnspan=6, pady=(0, 10))
+
+        Label(container, text="College Code", bg=bg_color, 
+              font=("Arial", 9, "bold")).grid(row=1, column=0, columnspan=3, sticky=W)
+        col_box = ttk.Combobox(container, values=college_codes, state="readonly")
+        col_box.grid(row=2, column=0, columnspan=3, pady=(2, 10), sticky=EW, padx=(0, 10))
+
+        Label(container, text="Program Code", bg=bg_color, 
+              font=("Arial", 9, "bold")).grid(row=1, column=3, columnspan=6, sticky=W)
+        code_entry = Entry(container, highlightthickness=0)
+        code_entry.grid(row=2, column=3, columnspan=6, pady=(2, 10), sticky=EW)
+
+        Label(container, text="Program Name", bg=bg_color, 
+              font=("Arial", 9, "bold")).grid(row=3, column=0, columnspan=6, sticky=W)
+        name_entry = Entry(container, highlightthickness=0)
+        name_entry.grid(row=4, column=0, columnspan=6, pady=(2, 15), sticky=EW)
 
         if is_edit:
             col_box.set(program_data[0])
@@ -935,7 +1148,7 @@ def student_system_gui():
                 CsvWrite.program([new_row])
                 show_notif(f"Program {new_row[1]} created!")
             
-            form_window.destroy()
+            hide_modal()
             if search_by_Student: search_student()
             elif search_by_Program: search_program()
             else: search_college()
@@ -957,10 +1170,14 @@ def student_system_gui():
 
         col_box.bind("<<ComboboxSelected>>", validate)
 
-        btn_save = Button(form_window, text="Save Changes" if is_edit else "Add Program", 
-                        command=save, bg="#2ecc71", fg=bg_color, font=("Arial", 10, "bold"),
-                        state=DISABLED)
-        btn_save.grid(row=4, column=0, columnspan=4, pady=(10, 0), sticky=EW)
+        btn_frame = Frame(container, bg=bg_color)
+        btn_frame.grid(row=5, column=0, columnspan=6, pady=(0, 10), sticky=EW)
+
+        btn_save = Button(btn_frame, text="Save Changes" if is_edit else "Create Programs", 
+                          command=save,bg="#2ecc71", fg="white", state=DISABLED)
+        btn_save.pack(side=RIGHT, padx=5)
+        Button(btn_frame, text="Cancel", command=hide_modal, 
+               bg="#e74c3c", fg="white").pack(side=RIGHT)
 
         validate()
         form_window.protocol("WM_DELETE_WINDOW", lambda: (hide_tooltip(), form_window.destroy()))
@@ -969,18 +1186,33 @@ def student_system_gui():
         is_edit = college_data is not None
         old_code = college_data[0] if is_edit else None
         
+        overlay = Toplevel(window)
+        overlay.overrideredirect(True)
+        overlay.configure(bg="black")
+        overlay.attributes("-alpha", 0.5)
+
+        ox = window.winfo_rootx()
+        oy = window.winfo_rooty()
+        ow = window.winfo_width()
+        oh = window.winfo_height()
+        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+
         form_window = Toplevel(window)
-        form_window.title("Edit College" if is_edit else "Create College")
-        form_window.geometry("400x180") 
-        form_window.config(bg=bg_color, padx=20, pady=15)
-        form_window.resizable(False, False)
+        form_window.overrideredirect(True)
+        form_window.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
+
+        fw, fh = 400, 220
+        form_window.geometry(f"{fw}x{fh}+{ox + (ow//2) - (fw//2)}+{oy + (oh//2) - (fh//2)}")
+
+        overlay.update_idletasks()
+        overlay.deiconify()
+        form_window.update_idletasks()
+        form_window.deiconify()
         form_window.grab_set()
 
-        existing_colleges = [row[0] for row in CsvRead.college()[1:]]
-        tooltip_window = None
-
-        for i in range(4): 
-            form_window.grid_columnconfigure(i, weight=1)
+        def hide_modal():
+            if tooltip_window: tooltip_window.destroy()
+            form_window.destroy(); overlay.destroy()
 
         def show_tooltip(text, event):
             nonlocal tooltip_window
@@ -1003,13 +1235,50 @@ def student_system_gui():
                 tooltip_window.destroy()
                 tooltip_window = None
 
-        Label(form_window, text="College Code", bg=bg_color, font=("Arial", 9, "bold")).grid(row=0, column=0, columnspan=4, sticky=W)
-        code_entry = Entry(form_window, highlightthickness=0)
-        code_entry.grid(row=1, column=0, columnspan=4, pady=(2, 10), sticky=EW)
+        def start_drag(event):
+            form_window._x, form_window._y = event.x, event.y
 
-        Label(form_window, text="College Name", bg=bg_color, font=("Arial", 9, "bold")).grid(row=2, column=0, columnspan=4, sticky=W)
-        name_entry = Entry(form_window, highlightthickness=0)
-        name_entry.grid(row=3, column=0, columnspan=4, pady=(2, 15), sticky=EW)
+        def do_drag(event):
+            nx = form_window.winfo_x() + event.x - form_window._x
+            ny = form_window.winfo_y() + event.y - form_window._y
+            form_window.geometry(f"+{max(ox, min(nx, ox + ow - fw))}+{max(oy, min(ny, oy + oh - fh))}")
+
+        def sync_positions(event=None):
+            if form_window.winfo_exists() and form_window.winfo_viewable():
+                ox = window.winfo_rootx()
+                oy = window.winfo_rooty()
+                ow = window.winfo_width()
+                oh = window.winfo_height()
+                overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+                overlay.deiconify()
+                fx = ox + (ow // 2) - (fw // 2)
+                fy = oy + (oh // 2) - (fh // 2)
+                form_window.geometry(f"+{fx}+{fy}")
+                form_window.deiconify()
+
+        container = Frame(form_window, bg=bg_color, padx=20, pady=15)
+        container.pack(fill=BOTH, expand=True)
+        container.bind("<Button-1>", start_drag); container.bind("<B1-Motion>", do_drag)
+        window.bind("<Configure>", sync_positions)
+
+        existing_colleges = [row[0] for row in CsvRead.college()[1:]]
+        tooltip_window = None
+
+        for i in range(4): 
+            container.grid_columnconfigure(i, weight=1)
+
+        Label(container, text="Edit College" if is_edit else "Create College", bg=bg_color, 
+              font=("Arial", 10, "bold")).grid(row=0, column=0, columnspan=4, pady=(0, 10))
+
+        Label(container, text="College Code", bg=bg_color, 
+              font=("Arial", 9, "bold")).grid(row=1, column=0, columnspan=4, sticky=W)
+        code_entry = Entry(container, highlightthickness=0)
+        code_entry.grid(row=2, column=0, columnspan=4, pady=(2, 10), sticky=EW)
+
+        Label(container, text="College Name", bg=bg_color, 
+              font=("Arial", 9, "bold")).grid(row=3, column=0, columnspan=4, sticky=W)
+        name_entry = Entry(container, highlightthickness=0)
+        name_entry.grid(row=4, column=0, columnspan=4, pady=(2, 15), sticky=EW)
 
         if is_edit:
             code_entry.insert(0, college_data[0])
@@ -1048,7 +1317,7 @@ def student_system_gui():
                 CsvWrite.college([new_row])
                 show_notif(f"College {new_row[0]} created!")
             
-            form_window.destroy()
+            hide_modal()
             if search_by_Student: search_student()
             elif search_by_Program: search_program()
             else: search_college()
@@ -1068,10 +1337,14 @@ def student_system_gui():
             entry.bind("<Enter>", on_enter)
             entry.bind("<Leave>", on_leave)
 
-        btn_save = Button(form_window, text="Save Changes" if is_edit else "Add College", 
-                        command=save, bg="#2ecc71", fg=bg_color, font=("Arial", 10, "bold"),
-                        state=DISABLED)
-        btn_save.grid(row=4, column=0, columnspan=4, pady=(5, 0), sticky=EW)
+        btn_frame = Frame(container, bg=bg_color)
+        btn_frame.grid(row=5, column=0, columnspan=4, pady=(5, 0), sticky=E)
+
+        btn_save = Button(btn_frame, text="Save Changes" if is_edit else "Create College", 
+                          bg="#2ecc71", fg="white", state=DISABLED, command=save)
+        btn_save.pack(side=RIGHT, padx=5)
+        Button(btn_frame, text="Cancel", command=hide_modal, 
+               bg="#e74c3c", fg="white").pack(side=RIGHT)
 
         validate()
         form_window.protocol("WM_DELETE_WINDOW", lambda: (hide_tooltip(), form_window.destroy()))
