@@ -15,32 +15,30 @@ def student_system_gui():
     window.config()
     window.resizable(False, False)
 
-    icon_path = Path(__file__).parent.parent / "Images" / "icon.png"
-    icon = PhotoImage(file=icon_path)
-    window.iconphoto(True, icon)
-
-    header = Frame(window, height=30, bg="#B90000")
-    header.pack(fill=X)
+    title_icon = Path(__file__).parent.parent / "Images" / "icon.png"
+    addS_icon = PhotoImage(file=Path(__file__).parent.parent / "Images" / "addS.png")
+    addP_icon = PhotoImage(file=Path(__file__).parent.parent / "Images" / "addP.png")
+    addC_icon = PhotoImage(file=Path(__file__).parent.parent / "Images" / "addC.png")
+    window.iconphoto(True, PhotoImage(file=title_icon))
 
     style = ttk.Style()
     style.theme_use('clam') 
     style.configure("Invalid.TCombobox", bordercolor="red",)
     style.configure("TCombobox", bordercolor="#cccccc")
 
-    header.grid_columnconfigure(0, weight=3)
+    header = Frame(window, height=30, bg="#B90000")
+    header.pack(fill=X)
+
+    header.grid_columnconfigure(0, weight=2)
     header.grid_columnconfigure(1, weight=1) 
 
-    title = Label(
-        header,
-        text="Student Information System",
-        font=("Helvetica", 12, "bold"),
-        bg="#B90000",
-        fg="#FFD700"
-    )
-    title.grid(row=0, column=0, sticky="w", padx=10, pady=10)
+    title = Label(header, text="Student Information System",
+                font=("Helvetica", 12, "bold"), 
+                bg="#B90000", fg="#FFD700")
+    title.grid(row=0, column=0, sticky=W, padx=10, pady=10)
 
     button_frame = Frame(header, bg="#B90000")
-    button_frame.grid(row=0, column=1, sticky="e", padx=20)
+    button_frame.grid(row=0, column=1, sticky=E, padx=20)
 
     button_search_student = Button(button_frame, text="Student", bg="#ffffff",fg = "#000000")
     button_search_program = Button(button_frame, text="Program", bg="#B90000",fg = "#FFD700")
@@ -49,25 +47,20 @@ def student_system_gui():
     header_buttons = [button_search_student, button_search_program, button_search_college]
     for buttons in header_buttons:
         buttons.pack(side=LEFT, padx=2)
-        buttons.config(font=("Helvetica", 9), 
-                       relief= FLAT, overrelief= FLAT,
-                       activebackground="#B90000", 
-                       bd=0, highlightthickness=0, borderwidth=0,
-                       width=8)
+        buttons.config(font=("Helvetica", 9), relief= FLAT, overrelief= FLAT, activebackground="#B90000", 
+                       bd=0, highlightthickness=0, borderwidth=0, width=8)
 
     input_frame = Frame(window, bg=bg_color, width=575)
-    input_frame.pack(pady=10)
+    input_frame.pack(pady=(20,0), padx=(0,0))
 
     toggle_search_button = Button(input_frame, width=16,text="Search by: Default")
-    input_entry = Entry(input_frame, width=30, font=("Arial", 12))
+    input_entry = Entry(input_frame, width=45, font=("Arial", 12), relief=FLAT, background="#cccccc")
     add_button = Button(input_frame,  text = "+", width=2, height=1)
-    toggle_sort_button = Button(input_frame, width=18, text="Sort by: Student ID")
 
-    toggle_search_button.pack(side=LEFT, padx=5)
+    toggle_search_button.pack(side=LEFT, padx=(0,5))
     input_entry.pack(side=LEFT, padx=5)
-    add_button.pack(side=LEFT)
-    toggle_sort_button.pack(side=LEFT, padx=5)
-
+    add_button.pack(side=LEFT, padx=(0,5))
+    
     output_frame = Frame(window, bg=bg_color)
     output_frame.pack(pady=20)
 
@@ -155,6 +148,27 @@ def student_system_gui():
         entry.bind("<FocusIn>", on_focus_in)
         entry.bind("<FocusOut>", on_focus_out)
 
+    def treeview_sort_column(tree, col, reverse):
+        global current_sort_col, current_sort_reverse
+        current_sort_col, current_sort_reverse = col, reverse
+
+        l = [(tree.set(k, col), k) for k in tree.get_children('')]
+        
+        try:
+            l.sort(key=lambda t: int(t[0]) if t[0].isdigit() else t[0].lower(), reverse=reverse)
+        except Exception:
+            l.sort(key=lambda t: t[0].lower(), reverse=reverse)
+
+        for index, (val, k) in enumerate(l):
+            tree.move(k, '', index)
+
+        for column in tree['columns']:
+            tree.heading(column, text=column.title())
+
+        arrow = " ↓" if reverse else " ↑"
+        tree.heading(col, text=col.title() + arrow,
+                    command=lambda: treeview_sort_column(tree, col, not reverse))
+
     def search_student():
         for widget in output_frame.winfo_children():
             widget.destroy()
@@ -171,26 +185,27 @@ def student_system_gui():
                 return
             if not isinstance(data, list): data = [data]
 
-            if sort_by_year: data = sorted(data, key=lambda x: x[4])
-            elif sort_by_name: data = sorted(data, key=lambda x: (x[1], x[2]))
-            elif sort_by_program: data = sorted(data, key=lambda x: (x[3], x[4]))
-
             headers = CsvRead.student()[0]
             tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
             tree.pack(fill=BOTH, expand=TRUE)
 
             for i in range (len(headers)):
-                tree.heading(headers[i], text=headers[i].title())
-                if i == 0: tree.column(headers[i], width=75, anchor=CENTER)
-                elif i == 1: tree.column(headers[i], width=150, )
-                elif i == 2: tree.column(headers[i], width=150)
-                elif i == 3: tree.column(headers[i], width=100)
-                elif i == 4: tree.column(headers[i], width=50, anchor=CENTER)
-                elif i == 5: tree.column(headers[i], width=50, anchor=CENTER)
-                tree.column(headers[i], stretch=False)
+                h = headers[i]
+                tree.heading(h, text=h.title(),
+                             command= lambda c = h: treeview_sort_column(tree, c, False))
+                if i == 0: tree.column(h, width=75, anchor=CENTER)
+                elif i == 1: tree.column(h, width=150, )
+                elif i == 2: tree.column(h, width=150)
+                elif i == 3: tree.column(h, width=100)
+                elif i == 4: tree.column(h, width=50, anchor=CENTER)
+                elif i == 5: tree.column(h, width=50, anchor=CENTER)
+                tree.column(h, stretch=False)
 
             for item in data:
                 tree.insert("", END, values=item,)
+
+            if current_sort_col in headers:
+                treeview_sort_column(tree, current_sort_col, current_sort_reverse)
 
             tree.bind('<Button-1>', handle_click)
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
@@ -250,22 +265,23 @@ def student_system_gui():
                 return
             if not isinstance(data, list): data = [data]
 
-            if sort_by_program_name: data = sorted(data, key=lambda x: x[2])
-            elif sort_by_program_code: data = sorted(data, key=lambda x: x[1])
-
             headers = CsvRead.program()[0]
             tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
             tree.pack(fill=BOTH, expand=True)
 
             for i in range(len(headers)):
                 h = headers[i]
-                tree.heading(h, text=headers[i].title())
+                tree.heading(h, text=h.title(),
+                             command= lambda c = h: treeview_sort_column(tree, c, False))
                 if i == 0: tree.column(h, width=90, anchor=CENTER)
-                elif i == 1: tree.column(h, width=90)
-                elif i == 2: tree.column(h, width=395)
+                elif i == 1: tree.column(h, width=100)
+                elif i == 2: tree.column(h, width=385)
 
             for item in data:
                 tree.insert("", END, values=item)
+
+            if current_sort_col in headers:
+                treeview_sort_column(tree, current_sort_col, current_sort_reverse)
 
             tree.bind('<Button-1>', handle_click)
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
@@ -315,20 +331,22 @@ def student_system_gui():
                 return
             if not isinstance(data, list): data = [data]
 
-            if sort_by_college_name: data = sorted(data, key=lambda x: x[1])
-
             headers = CsvRead.college()[0]
             tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
             tree.pack(fill=BOTH, expand=True)
 
             for i in range(len(headers)):
                 h = headers[i]
-                tree.heading(h, text=headers[i].title())
+                tree.heading(h, text=h.title(),
+                             command= lambda c = h: treeview_sort_column(tree, c, False))
                 if i == 0: tree.column(h, width=100, anchor=CENTER)
                 elif i == 1: tree.column(h, width=475)
 
             for item in data:
                 tree.insert("", END, values=item)
+
+            if current_sort_col in headers:
+                treeview_sort_column(tree, current_sort_col, current_sort_reverse)
 
             tree.bind('<Button-1>', handle_click)
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
@@ -457,6 +475,7 @@ def student_system_gui():
     
     def toggle_search(index = 1):
         global search_by_Student, search_by_Program, search_by_College
+        global current_sort_col, current_sort_reverse
         global toggle_search_by_student_value, toggle_search_by_program_value, toggle_search_by_college_value
         toggle_search_by_student_value, toggle_search_by_program_value, toggle_search_by_college_value = 1, 1, 1
 
@@ -475,106 +494,32 @@ def student_system_gui():
 
         match index:
             case 1:
+                current_sort_col = "Student ID"
                 button_search_student.config(bg= "#ffffff", fg="#000000")
                 search_by_Program = False
                 search_by_College = False
                 search_by_Student = True
                 if new_placeholder: add_placeholder(input_entry, "Enter Student Info...")
                 toggle_search_by(True)
-                toggle_sort_Student(True)
+                search_student()
             case 2:
+                current_sort_col = "Program Code"
                 button_search_program.config(bg= "#ffffff", fg="#000000")
                 search_by_Program = True
                 search_by_College = False
                 search_by_Student = False
                 if new_placeholder: add_placeholder(input_entry, "Enter Program Info...")
                 toggle_search_by(True)
-                toggle_sort_Program(True)
+                search_program()
             case 3:
+                current_sort_col = "College Code"
                 button_search_college.config(bg= "#ffffff", fg="#000000")
                 search_by_Program = False
                 search_by_College = True
                 search_by_Student = False
                 if new_placeholder: add_placeholder(input_entry, "Enter College Info...")
                 toggle_search_by(True)
-                toggle_sort_College(True)
-
-    def toggle_sort_Student(freeze = False):
-        global sort_by_year, sort_by_name, sort_by_program, toggle_sort_student
-        button_name = "Sort by: "
-
-        if not freeze:
-            if toggle_sort_student == 4: toggle_sort_student = 1
-            else: toggle_sort_student += 1
-
-        match toggle_sort_student:
-            case 1:
-                sort_by_year = False
-                sort_by_name = False
-                sort_by_program = False
-                button_name += "Student ID"
-            case 2:
-                sort_by_year = False
-                sort_by_name = True
-                sort_by_program = False
-                button_name += "Student Name"
-            case 3:
-                sort_by_year = False
-                sort_by_name = False
-                sort_by_program = True  
-                button_name += "Student Program"
-            case 4:
-                sort_by_year = True
-                sort_by_name = False
-                sort_by_program = False
-                button_name += "Student Year"
-
-        toggle_sort_button.config(text=button_name)
-        search_student()
-
-    def toggle_sort_Program(freeze = False):
-        global sort_by_program_name, sort_by_program_code, toggle_sort_program
-        button_name = "Sort by: "
-
-        if not freeze:
-            if toggle_sort_program == 3: toggle_sort_program = 1
-            else: toggle_sort_program += 1
-
-        match toggle_sort_program:
-            case 1:
-                sort_by_program_name = False
-                sort_by_program_code = False
-                button_name += "Program College"
-            case 2:
-                sort_by_program_name = False
-                sort_by_program_code = True
-                button_name += "Program Code"
-            case 3:
-                sort_by_program_name = True
-                sort_by_program_code = False
-                button_name += "Program Name"
-
-        toggle_sort_button.config(text=button_name)
-        search_program()
-
-    def toggle_sort_College(freeze = False):
-        global sort_by_college_name, toggle_sort_college
-        button_name = "Sort by: "
-
-        if not freeze:
-            if toggle_sort_college == 2: toggle_sort_college = 1
-            else: toggle_sort_college += 1
-
-        match toggle_sort_college:
-            case 1:
-                sort_by_college_name = False
-                button_name += "College Code"
-            case 2:
-                sort_by_college_name = True
-                button_name += "College Name"
-
-        toggle_sort_button.config(text=button_name)
-        search_college()
+                search_college()
 
     def delete_confirm(data_id):
 
@@ -915,7 +860,8 @@ def student_system_gui():
 
         container = Frame(form_window, bg=bg_color, padx=20, pady=15)
         container.pack(fill=BOTH, expand=True)
-        container.bind("<Button-1>", start_drag); container.bind("<B1-Motion>", do_drag)
+        container.bind("<Button-1>", start_drag)
+        container.bind("<B1-Motion>", do_drag)
         window.bind("<Configure>", sync_positions)
 
         college_codes = [row[0] for row in CsvRead.college()[1:]]
@@ -957,13 +903,6 @@ def student_system_gui():
         year_box.grid(row=6, column=3, sticky=EW, padx=(0, 5))
         gen_box = ttk.Combobox(container, values=["Male", "Female"], state="readonly", width=7)
         gen_box.grid(row=6, column=4, columnspan=2, sticky=EW)
-
-        container.bind("<Button-1>", start_drag)
-        container.bind("<B1-Motion>", do_drag)
-        for child in container.winfo_children():
-            if isinstance(child, Label):
-                child.bind("<Button-1>", start_drag)
-                child.bind("<B1-Motion>", do_drag)
 
         if is_edit:
             last_entry.insert(0, student_data[1])
@@ -1175,6 +1114,11 @@ def student_system_gui():
             code_entry.config(highlightthickness=1 if not code_v else 0, highlightbackground="red")
             name_entry.config(highlightthickness=1 if not name_v else 0, highlightbackground="red")
 
+            if col_box.get() == "":
+                col_box.config(style="Invalid.TCombobox")
+            else:
+                col_box.config(style="TCombobox")
+        
             if all([code_v, name_v, col_box.get()]):
                 btn_save.config(state=NORMAL)
                 hide_tooltip()
@@ -1401,13 +1345,17 @@ def student_system_gui():
 
     def show_add_menu():
         add_menu = Menu(window, tearoff=0)
-        add_menu.add_command(label="Add Student", command=open_student_form)
-        add_menu.add_command(label="Add Program", command=open_program_form)
-        add_menu.add_command(label="Add College", command=open_college_form)
+        add_menu.add_command(image=addS_icon, label="Add Student", 
+                             command=open_student_form, compound=LEFT)
+        add_menu.add_command(image=addP_icon, label="Add Program", 
+                             command=open_program_form, compound=LEFT)
+        add_menu.add_command(image=addC_icon, label="Add College", 
+                             command=open_college_form, compound=LEFT)
 
         x = add_button.winfo_rootx()
         y = add_button.winfo_rooty() + add_button.winfo_height()
         add_menu.tk_popup(x, y)
+        add_menu.config()
 
     def show_notif(message, color="#00e35f"):
         toast_label = Label(window, text=message, bg=color, fg=bg_color, font=("Arial", 10, "bold"), pady=5)
@@ -1489,7 +1437,6 @@ def student_system_gui():
     input_entry.bind("<KeyRelease>", on_typing)
 
     toggle_search_button.config(command=toggle_search_by)
-    toggle_sort_button.config(command=toggle_sort_Student)
     button_search_student.config(command=lambda: toggle_search(1))
     button_search_program.config(command=lambda: toggle_search(2))
     button_search_college.config(command=lambda: toggle_search(3))
@@ -1501,6 +1448,8 @@ def student_system_gui():
     CsvSort.All()
 
     return window
+
+current_sort_col, current_sort_reverse = "Student ID", False
 
 toggle_search_by_student_value, toggle_search_by_program_value, toggle_search_by_college_value = 1, 1, 1
 toggle_sort_student, toggle_sort_program, toggle_sort_college = 1, 1, 1
