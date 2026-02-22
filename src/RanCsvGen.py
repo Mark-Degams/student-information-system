@@ -26,7 +26,7 @@ def generate_random_student():
         "Amelia", "Benjamin", "Harper", "Sebastian", "Evelyn"
     ]
     program_codes = []
-    for row in CsvRead.program():
+    for row in CsvRead.program()[1:]:
         program_codes.append(row[1])
     genders = ["M", "F"]
 

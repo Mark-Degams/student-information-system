@@ -1,6 +1,6 @@
 from src.csv_core import *
 from tkinter import *
-from tkinter import ttk, messagebox
+from tkinter import ttk
 from pathlib import Path
 from src import RanCsvGen
 from src import Constraints
@@ -21,6 +21,11 @@ def student_system_gui():
 
     header = Frame(window, height=30, bg="#B90000")
     header.pack(fill=X)
+
+    style = ttk.Style()
+    style.theme_use('clam') 
+    style.configure("Invalid.TCombobox", bordercolor="red",)
+    style.configure("TCombobox", bordercolor="#cccccc")
 
     header.grid_columnconfigure(0, weight=3)
     header.grid_columnconfigure(1, weight=1) 
@@ -157,6 +162,10 @@ def student_system_gui():
         input_text = input_entry.get().strip()
 
         def display_result(data):
+            def handle_click(event):
+                if tree.identify_region(event.x, event.y) == "separator":
+                    return "break"
+
             if data is None or data == []:
                 Label(output_frame, text="No results found.", bg=bg_color, fg="Red", font=("Arial", 12)).pack()
                 return
@@ -167,7 +176,7 @@ def student_system_gui():
             elif sort_by_program: data = sorted(data, key=lambda x: (x[3], x[4]))
 
             headers = CsvRead.student()[0]
-            tree = ttk.Treeview(output_frame, columns=headers, show="headings")
+            tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
             tree.pack(fill=BOTH, expand=TRUE)
 
             for i in range (len(headers)):
@@ -178,11 +187,14 @@ def student_system_gui():
                 elif i == 3: tree.column(headers[i], width=100)
                 elif i == 4: tree.column(headers[i], width=50, anchor=CENTER)
                 elif i == 5: tree.column(headers[i], width=50, anchor=CENTER)
+                tree.column(headers[i], stretch=False)
 
             for item in data:
                 tree.insert("", END, values=item,)
 
+            tree.bind('<Button-1>', handle_click)
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
+            tree.bind("<B1-Motion>", lambda event: on_left_drag_select(event, tree))
 
         result = None
 
@@ -229,6 +241,10 @@ def student_system_gui():
         input_text = input_entry.get().strip()
 
         def display_result(data):
+            def handle_click(event):
+                if tree.identify_region(event.x, event.y) == "separator":
+                    return "break" 
+
             if data is None or data == []:
                 Label(output_frame, text="No results found.", bg=bg_color, fg="Red", font=("Arial", 12)).pack()
                 return
@@ -238,7 +254,7 @@ def student_system_gui():
             elif sort_by_program_code: data = sorted(data, key=lambda x: x[1])
 
             headers = CsvRead.program()[0]
-            tree = ttk.Treeview(output_frame, columns=headers, show="headings")
+            tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
             tree.pack(fill=BOTH, expand=True)
 
             for i in range(len(headers)):
@@ -251,6 +267,7 @@ def student_system_gui():
             for item in data:
                 tree.insert("", END, values=item)
 
+            tree.bind('<Button-1>', handle_click)
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
 
         result = None
@@ -289,6 +306,10 @@ def student_system_gui():
         input_text = input_entry.get().strip()
         
         def display_result(data):
+            def handle_click(event):
+                if tree.identify_region(event.x, event.y) == "separator":
+                    return "break"
+
             if data is None or data == []:
                 Label(output_frame, text="No results found.", bg=bg_color, fg="Red", font=("Arial", 12)).pack()
                 return
@@ -297,7 +318,7 @@ def student_system_gui():
             if sort_by_college_name: data = sorted(data, key=lambda x: x[1])
 
             headers = CsvRead.college()[0]
-            tree = ttk.Treeview(output_frame, columns=headers, show="headings")
+            tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
             tree.pack(fill=BOTH, expand=True)
 
             for i in range(len(headers)):
@@ -309,6 +330,7 @@ def student_system_gui():
             for item in data:
                 tree.insert("", END, values=item)
 
+            tree.bind('<Button-1>', handle_click)
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
 
         result = None
@@ -556,12 +578,6 @@ def student_system_gui():
 
     def delete_confirm(data_id):
 
-        # preview_window = Toplevel(window)
-        # preview_window.title("Confirm Delete")
-        # preview_window.geometry("420x480")
-        # preview_window.resizable(False, False) 
-        # preview_window.grab_set()
-
         overlay = Toplevel(window)
         overlay.overrideredirect(True)
         overlay.configure(bg="black")
@@ -580,7 +596,7 @@ def student_system_gui():
         fw, fh = 420, 480 
 
         def hide_modal():
-            window.unbind("<Configure>") # Stop syncing when closed
+            window.unbind("<Configure>")
             preview_window.grab_release()
             preview_window.destroy()
             overlay.destroy()
@@ -608,25 +624,48 @@ def student_system_gui():
 
         # STUDENT DELETE
 
+        is_bulk = isinstance(data_id, list)
+
         if search_by_Student:
-            fw, fh = 420, 130
-            Label(
-                container,
-                text=f"⚠ Are you sure you want to delete Student?",
-                bg=bg_color, fg="#e9240e",
-                font=("Arial", 11, "bold")
-            ).pack(pady=(5,0))
-            Label(
-                container,
-                text=f"{data_id}?",
-                bg=bg_color, fg="#000000",
-                font=("Arial", 12, "bold")
-            ).pack(pady=(0,0))
+            if is_bulk:
+                fw, fh = 300, 240
+                Label(
+                    container, text=f"⚠ Are you sure you \nwant to delete {len(data_id)} Students?",
+                    bg=bg_color, fg="#e9240e", font=("Arial", 11, "bold")
+                ).pack(pady=(5,0))
+
+                frame = Frame(container)
+                frame.pack(fill=BOTH, expand=True, pady=5)
+
+                tree = ttk.Treeview(frame, columns=("Student ID",),
+                    show="headings", height=3)
+
+                scrollbar = Scrollbar(frame, orient="vertical", command=tree.yview)
+                tree.configure(yscrollcommand=scrollbar.set)
+
+                tree.pack(side="left", fill=BOTH, expand=True)
+                scrollbar.pack(side="right", fill="y")
+
+                tree.heading("Student ID", text="Student ID")
+                tree.column("Student ID", width=200, anchor=CENTER)
+
+                for row in data_id:
+                    tree.insert("", END, values=(row))
+
+            else:
+                fw, fh = 420, 150
+                Label(
+                    container, text=f"⚠ Are you sure you want to delete Student?",
+                    bg=bg_color, fg="#e9240e", font=("Arial", 11, "bold")
+                ).pack(pady=(5,0))
+                Label(container, text=f"{data_id}?",
+                    bg=bg_color, fg="#000000", font=("Arial", 12, "bold")
+                ).pack(pady=(0,0))
 
         # PROGRAM DELETE
 
         elif search_by_Program:
-            fw, fh = 300, 250
+            fw, fh = 300, 270
 
             all_students = CsvRead.student()[1:]
             students_to_delete = [row for row in all_students if row[3] == data_id]
@@ -634,8 +673,7 @@ def student_system_gui():
             Label(
                 container,
                 text=f"⚠ Deleting Program {data_id}\nwill also delete:",
-                bg=bg_color, fg="#e9240e",
-                font=("Arial", 11, "bold")
+                bg=bg_color, fg="#e9240e", font=("Arial", 11, "bold")
             ).pack(pady=5)
 
             if students_to_delete:
@@ -643,12 +681,8 @@ def student_system_gui():
                 frame = Frame(container)
                 frame.pack(fill=BOTH, expand=True, pady=5)
 
-                tree = ttk.Treeview(
-                    frame,
-                    columns=("Student ID",),
-                    show="headings",
-                    height=4
-                )
+                tree = ttk.Treeview(frame, columns=("Student ID",),
+                    show="headings", height=4)
 
                 scrollbar = Scrollbar(frame, orient="vertical", command=tree.yview)
                 tree.configure(yscrollcommand=scrollbar.set)
@@ -663,7 +697,7 @@ def student_system_gui():
                     tree.insert("", END, values=(row[0],))
 
             else:
-                fw, fh = 300, 150
+                fw, fh = 300, 170
                 Label(container, text="No students affected.", bg=bg_color).pack(pady=(10,0))
 
         # COLLEGE DELETE
@@ -677,15 +711,12 @@ def student_system_gui():
             program_codes = [p[1] for p in programs_to_delete]
             students_to_delete = [row for row in all_students if row[3] in program_codes]
 
-            Label(
-                container,
-                text=f"⚠ Deleting College {data_id} will also delete:",
-                bg=bg_color, fg="#e9240e",
-                font=("Arial", 10, "bold")
+            Label(container, text=f"⚠ Deleting College {data_id} will also delete:",
+                bg=bg_color, fg="#e9240e", font=("Arial", 10, "bold")
             ).pack(pady=5)
 
             if programs_to_delete:
-                fw, fh = (480, 400) if students_to_delete else (480, 250)
+                fw, fh = (480, 420) if students_to_delete else (480, 270)
 
                 Label(container, text=f"{len(programs_to_delete)} Programs", fg="blue", bg=bg_color)\
                     .pack(pady=(10, 0))
@@ -741,11 +772,13 @@ def student_system_gui():
                 stu_tree.column("Student ID", width=150, anchor=CENTER)
                 stu_tree.column("Program Code", width=150, anchor=CENTER)
 
+                students_to_delete = sorted(students_to_delete, key=lambda x: x[3])
+
                 for row in students_to_delete:
                     stu_tree.insert("", END, values=(row[0], row[3]))
 
             if not programs_to_delete and not students_to_delete:
-                fw, fh = 480, 150
+                fw, fh = 480, 170
                 Label(container,
                     text="No dependent records found.",
                     bg=bg_color).pack(pady=10)
@@ -760,7 +793,9 @@ def student_system_gui():
         def confirm_delete():
 
             if search_by_Student:
-                CsvDelete.student(data_id)
+                if is_bulk: 
+                    for Id in data_id: CsvDelete.student(Id)
+                else: CsvDelete.student(data_id)
                 search_student()
 
             elif search_by_Program:
@@ -778,9 +813,17 @@ def student_system_gui():
                 search_college()
 
             hide_modal()
-            show_notif(f"{data_id} deleted successfully!", color="#e74c3c")
+            if is_bulk:
+                show_notif(f"{len(data_id)} Students deleted successfully!", color="#e74c3c")
+            else:
+                show_notif(f"{data_id} deleted successfully!", color="#e74c3c")
 
-        Button(btn_frame, text="Confirm", bg="#e74c3c", fg="white", width=12, command=confirm_delete).pack(side=LEFT, padx=10)
+        Label(container, text=f"⚠ This Action Cannot be Undone",
+                bg=bg_color, fg="#e9240e", font=("Arial", 8, "bold")
+            ).pack(pady=(0, 0))
+
+        Button(btn_frame, text="Confirm", bg="#e74c3c", fg="white", 
+               width=12, command=confirm_delete).pack(side=LEFT, padx=10)
         Button(btn_frame, text="Cancel", width=12, command=hide_modal).pack(side=LEFT)
 
         overlay.update_idletasks()
@@ -901,7 +944,7 @@ def student_system_gui():
         first_entry = Entry(container, highlightthickness=0, bd=1, relief="solid")
         first_entry.grid(row=4, column=3, columnspan=3, sticky=EW, pady=(0, 10))
 
-        Label(container, text="Col", bg=bg_color).grid(row=5, column=0, sticky=W)
+        Label(container, text="College", bg=bg_color).grid(row=5, column=0, sticky=W)
         Label(container, text="Program", bg=bg_color).grid(row=5, column=1, columnspan=2, sticky=W)
         Label(container, text="Year", bg=bg_color).grid(row=5, column=3, sticky=W)
         Label(container, text="Gender", bg=bg_color).grid(row=5, column=4, columnspan=2, sticky=W)
@@ -947,6 +990,13 @@ def student_system_gui():
             id_entry.config(highlightthickness=1 if not id_v else 0, highlightbackground="red")
             last_entry.config(highlightthickness=1 if not last_v else 0, highlightbackground="red")
             first_entry.config(highlightthickness=1 if not first_v else 0, highlightbackground="red")
+
+            combos = [col_box, prog_box, year_box, gen_box]
+            for cb in combos:
+                if cb.get()=="":
+                    cb.config(style="Invalid.TCombobox")
+                else:
+                    cb.config(style="TCombobox")
 
             if all([id_v, last_v, first_v, col_box.get(), prog_box.get(), year_box.get(), gen_box.get()]):
                 btn_save.config(state=NORMAL)
@@ -1366,28 +1416,56 @@ def student_system_gui():
         def fade_out(): toast_label.destroy()
         window.after(3000, fade_out)
 
-    def on_right_click(event, tree):
-
+    def on_left_drag_select(event, tree):
         item_id = tree.identify_row(event.y)
+        
         if item_id:
-            tree.selection_set(item_id)
-            if search_by_Student or search_by_College:
-                data_value = tree.item(item_id, 'values')
-                data_id = data_value[0]
-            if search_by_Program:
-                data_value = tree.item(item_id, 'values')
-                data_id = data_value[1]
+            current_selection = list(tree.selection())
 
-            menu = Menu(window, tearoff=0)
+            if item_id not in current_selection:
+                current_selection.append(item_id)
+                tree.selection_set(current_selection)
+
+                tree.see(item_id)
+
+    def on_right_click(event, tree):
+        item_id = tree.identify_row(event.y)
+        if not item_id:
+            return
+            
+        selected_items = tree.selection()
+        
+        if search_by_Student:
+            if (item_id not in selected_items):
+                tree.selection_set(item_id)
+                selected_items = (item_id,)
+        else:
+            tree.selection_set(item_id)
+            selected_items = (item_id,)
+
+        menu = Menu(window, tearoff=0)
+
+        if search_by_Student and len(selected_items) > 1:
+            all_ids = [tree.item(item, 'values')[0] for item in selected_items]
+            
+            menu.add_command(
+                label=f"Delete {len(selected_items)} Selected Students", 
+                command=lambda: delete_confirm(all_ids)
+            )
+        else:
+            data_value = tree.item(item_id, 'values')
+            data_id = data_value[1] if search_by_Program else data_value[0]
+
             if search_by_Student:
                 menu.add_command(label="Edit", command=lambda: open_student_form(data_value))
             elif search_by_Program:
                 menu.add_command(label="Edit", command=lambda: open_program_form(data_value))
             elif search_by_College:
                 menu.add_command(label="Edit", command=lambda: open_college_form(data_value))
+            
             menu.add_command(label="Delete", command=lambda: delete_confirm(data_id))
             
-            menu.post(event.x_root, event.y_root)
+        menu.post(event.x_root, event.y_root)
 
     def on_typing(event):
         global search_job
