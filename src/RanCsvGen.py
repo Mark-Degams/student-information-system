@@ -5,7 +5,7 @@ from src.csv_core import CsvWrite
 def generate_random_student():
 
     generate_program_college()
-    student_count = 100
+    student_count = 1000
 
     data = [
         ["Student ID", "Last Name", "First Name", "Program Code", "Year", "Gender"]

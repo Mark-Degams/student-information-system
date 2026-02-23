@@ -1,25 +1,31 @@
 from src.csv_core import *
 from tkinter import *
 from tkinter import ttk
-from pathlib import Path
 from src import RanCsvGen
 from src import Constraints
+
+import os
 
 def student_system_gui():
     bg_color = "#ffffff"
 
     window = Tk()
     window.geometry("600x400")
-    window.title("Student Information System(Lite)")
+    window.title("Student Information System")
     window.config(bg=bg_color)
     window.config()
     window.resizable(False, False)
 
-    title_icon = Path(__file__).parent.parent / "Images" / "icon.png"
-    addS_icon = PhotoImage(file=Path(__file__).parent.parent / "Images" / "addS.png")
-    addP_icon = PhotoImage(file=Path(__file__).parent.parent / "Images" / "addP.png")
-    addC_icon = PhotoImage(file=Path(__file__).parent.parent / "Images" / "addC.png")
-    window.iconphoto(True, PhotoImage(file=title_icon))
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    images_dir = os.path.join(base_dir, "Images")
+
+    title_icon = PhotoImage(file=os.path.join(images_dir, "icon.png"))
+    addS_icon = PhotoImage(file=os.path.join(images_dir, "addS.png"))
+    addP_icon = PhotoImage(file=os.path.join(images_dir, "addP.png"))
+    addC_icon = PhotoImage(file=os.path.join(images_dir, "addC.png"))
+    edit_icon = PhotoImage(file=os.path.join(images_dir, "edit.png"))
+    delete_icon = PhotoImage(file=os.path.join(images_dir, "delete.png"))
+    window.iconphoto(True, title_icon)
 
     style = ttk.Style()
     style.theme_use('clam') 
@@ -66,25 +72,39 @@ def student_system_gui():
 
     # --- GUI Functions ---
 
+    def create_modal(parent, width, height):
+        overlay = Toplevel(parent)
+        overlay.overrideredirect(True)
+        overlay.configure(bg="black")
+        overlay.attributes("-alpha", 0.5)
+
+        ox = parent.winfo_rootx()
+        oy = parent.winfo_rooty()
+        ow = parent.winfo_width()
+        oh = parent.winfo_height()
+        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+
+        modal = Toplevel(parent)
+        modal.overrideredirect(True)
+        modal.configure(bg="#ffffff", highlightbackground="#cccccc", highlightthickness=1)
+
+        fx = ox + (ow // 2) - (width // 2)
+        fy = oy + (oh // 2) - (height // 2)
+        modal.geometry(f"{width}x{height}+{fx}+{fy}")
+
+        overlay.update_idletasks()
+        overlay.deiconify()
+        modal.deiconify()
+        modal.grab_set()
+
+        return overlay, modal, ox,oy,ow,oh
+
     def empty_csv_check():
         if len(CsvRead.student()) > 1:
             return
 
-        overlay = Toplevel(window)
-        overlay.overrideredirect(True)
-        overlay.configure(bg="black")
-        
-        ox, oy = window.winfo_rootx(), window.winfo_rooty()
-        ow, oh = window.winfo_width(), window.winfo_height()
-        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
-
-        modal = Toplevel(window)
-        modal.withdraw()
-        modal.overrideredirect(True)
-        modal.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
-        
         fw, fh = 350, 180 
-        modal.geometry(f"{fw}x{fh}+{ox + (ow//2) - (fw//2)}+{oy + (oh//2) - (fh//2)}")
+        overlay, modal, ox,oy,ow,oh = create_modal(window, fw, fh)
 
         def hide_modal():
             window.unbind("<Configure>")
@@ -107,7 +127,7 @@ def student_system_gui():
         container.pack(fill=BOTH, expand=True)
 
         Label(container, text="Generate Data?", bg=bg_color, font=("Arial", 11, "bold"), fg="#333").pack(pady=(0, 10))
-        Label(container, text="It looks like your CSV files are empty.\nWould you like to generate 100\nrandom student records?", 
+        Label(container, text="It looks like your CSV files are empty.\nWould you like to generate 1000\nrandom student records?", 
               bg=bg_color, justify=CENTER, font=("Arial", 9)).pack(pady=5)
 
         btn_frame = Frame(container, bg=bg_color)
@@ -122,13 +142,7 @@ def student_system_gui():
         Button(btn_frame, text="Yes, Generate", bg="#2ecc71", fg="white", width=12, relief="flat", command=on_yes).pack(side=LEFT, padx=5)
         Button(btn_frame, text="No, Thanks", bg="#95a5a6", fg="white", width=12, relief="flat", command=hide_modal).pack(side=LEFT, padx=5)
 
-        # Activation
-        overlay.update_idletasks()
-        overlay.deiconify()
-        overlay.attributes("-alpha", 0.5)
-        modal.deiconify()
         modal.lift()
-        modal.grab_set()
  
     def add_placeholder(entry, text):
         entry.delete(0, END)
@@ -173,8 +187,6 @@ def student_system_gui():
         for widget in output_frame.winfo_children():
             widget.destroy()
 
-        input_text = input_entry.get().strip()
-
         def display_result(data):
             def handle_click(event):
                 if tree.identify_region(event.x, event.y) == "separator":
@@ -211,41 +223,65 @@ def student_system_gui():
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
             tree.bind("<B1-Motion>", lambda event: on_left_drag_select(event, tree))
 
-        result = None
+            count_label = Label(output_frame, text=f"Displaying {len(data)} Students",
+                        font=("Helvetica", 8), bg="#ffffff", fg="#ABABAB")
+            count_label.pack(side=RIGHT)
 
-        if search_by_student_ID:
-            students = CsvRead.student()[1:]
-            result = [row for row in students if input_text.lower() in row[0].lower()]
-        elif search_by_student_name:
-            students = CsvRead.student()[1:]
-            result = [row for row in students if input_text.lower() in row[1].lower() or input_text.lower() in row[2].lower()]
-        elif search_by_student_program:
-            students = CsvRead.student()[1:]
-            result = [row for row in students if input_text.lower() in row[3].lower()]
-        else:
-            if CsvSearch.studentID(input_text):
-                result = CsvSearch.studentID(input_text)
-            elif CsvSearch.studentName(input_text):
-                result = CsvSearch.studentName(input_text)
-            elif CsvSearch.studentProgram(input_text):
-                result = CsvSearch.studentProgram(input_text)
-            elif CsvSearch.studentCollege(input_text):
-                result = CsvSearch.studentCollege(input_text)
-            elif CsvSearch.studentYear(input_text):
-                result = CsvSearch.studentYear(input_text)
-            elif input_text.lower() in ["male", "female", "m", "f"]:
-                result = CsvSearch.studentGender(input_text)
-            elif input_text.lower() in ["all"] or input_text == "" or input_text == "Enter Student Info...":
-                result = CsvRead.student()[1:]
-            else: 
+        def single_search(input_text):
+            if search_by_student_ID:
                 students = CsvRead.student()[1:]
-                result = [row for row in students 
-                          if input_text.lower() in row[0].lower().replace("-","") or
-                          input_text.lower() in row[1].lower() or
-                          input_text.lower() in row[2].lower() or
-                          input_text.lower() in row[3].lower().replace("-","") or
-                          input_text.lower() in row[4].lower() or
-                          input_text.lower() in row[5].lower()]
+                result = [row for row in students if input_text.lower() in row[0].lower()]
+            elif search_by_student_name:
+                students = CsvRead.student()[1:]
+                result = [row for row in students if input_text.lower() in row[1].lower() or input_text.lower() in row[2].lower()]
+            elif search_by_student_program:
+                students = CsvRead.student()[1:]
+                result = [row for row in students if input_text.lower() in row[3].lower()]
+            else:
+                if CsvSearch.studentID(input_text):
+                    result = CsvSearch.studentID(input_text)
+                elif CsvSearch.studentName(input_text):
+                    result = CsvSearch.studentName(input_text)
+                elif CsvSearch.studentProgram(input_text):
+                    result = CsvSearch.studentProgram(input_text)
+                elif CsvSearch.studentCollege(input_text):
+                    result = CsvSearch.studentCollege(input_text)
+                elif CsvSearch.studentYear(input_text):
+                    result = CsvSearch.studentYear(input_text)
+                elif input_text.lower() in ["male", "female", "m", "f"]:
+                    result = CsvSearch.studentGender(input_text)
+                else: 
+                    students = CsvRead.student()[1:]
+                    result = [row for row in students 
+                            if input_text.lower() in row[0].lower().replace("-","") or
+                            input_text.lower() in row[1].lower() or
+                            input_text.lower() in row[2].lower() or
+                            input_text.lower() in row[3].lower().replace("-","") or
+                            input_text.lower() in row[4].lower() or
+                            input_text.lower() in row[5].lower()]
+                    
+            return result
+            
+        input_text = input_entry.get().strip()
+        keywords = [k.strip() for k in input_text.split(",") if k.strip()]
+        result = None
+            
+        if input_text.lower() in ["all", "", "enter student info..."]:
+            result = CsvRead.student()[1:]
+        elif len(keywords) == 1: 
+            result = single_search(keywords[0])
+        else :
+            result_set = []
+            
+            for key in keywords:
+                result_single = single_search(key)
+                if result_single:
+                    result_set.append(set(tuple(res) for res in result_single))
+            
+            if result_set:
+                intersected = set.intersection(*result_set)
+                result = [list(r) for r in intersected]
+            else: result = []
                           
         display_result(result)
 
@@ -522,23 +558,10 @@ def student_system_gui():
                 search_college()
 
     def delete_confirm(data_id):
-
-        overlay = Toplevel(window)
-        overlay.overrideredirect(True)
-        overlay.configure(bg="black")
-        overlay.attributes("-alpha", 0.5)
-        
-        ox = window.winfo_rootx()
-        oy = window.winfo_rooty()
-        ow = window.winfo_width()
-        oh = window.winfo_height()
-        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
-
-        preview_window = Toplevel(window)
-        preview_window.overrideredirect(True)
-        preview_window.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
+        if not data_id: return
         
         fw, fh = 420, 480 
+        overlay, preview_window, ox,oy,ow,oh = create_modal(window, fw, fh)
 
         def hide_modal():
             window.unbind("<Configure>")
@@ -783,32 +806,10 @@ def student_system_gui():
     def open_student_form(student_data=None):
         is_edit = student_data is not None
         
-        overlay = Toplevel(window)
-        overlay.overrideredirect(True)
-        overlay.configure(bg="black")
-        overlay.attributes("-alpha", 0.5)
-        
-        ox = window.winfo_rootx()
-        oy = window.winfo_rooty()
-        ow = window.winfo_width()
-        oh = window.winfo_height()
-        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
-
-        form_window = Toplevel(window)
-        form_window.overrideredirect(True)
-        form_window.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
-        
         fw, fh = 350, 270 
+        overlay, form_window, ox,oy,ow,oh = create_modal(window, fw, fh)
         fx = ox + (ow // 2) - (fw // 2)
         fy = oy + (oh // 2) - (fh // 2)
-        form_window.geometry(f"{fw}x{fh}+{fx}+{fy}")
-
-        overlay.update_idletasks()
-        overlay.deiconify()
-        form_window.update_idletasks()
-        form_window.deiconify()
-        
-        form_window.grab_set()
 
         def hide_modal():
             if tooltip_window: tooltip_window.destroy()
@@ -994,35 +995,13 @@ def student_system_gui():
         btn_cancel.pack(side=RIGHT, padx=5)
 
         validate()
-        
+
     def open_program_form(program_data=None):
         is_edit = program_data is not None
         old_code = program_data[1] if is_edit else None
-        
-        overlay = Toplevel(window)
-        overlay.overrideredirect(True)
-        overlay.configure(bg="black")
-        overlay.attributes("-alpha", 0.5)
-        
-        ox = window.winfo_rootx()
-        oy = window.winfo_rooty()
-        ow = window.winfo_width()
-        oh = window.winfo_height()
-        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
 
-        form_window = Toplevel(window)
-        form_window.overrideredirect(True)
-        form_window.config(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
-        
-        fw, fh = 320, 200 
-        fx, fy = ox + (ow // 2) - (fw // 2), oy + (oh // 2) - (fh // 2)
-        form_window.geometry(f"{fw}x{fh}+{fx}+{fy}")
-
-        overlay.update_idletasks()
-        overlay.deiconify()
-        form_window.update_idletasks()
-        form_window.deiconify()
-        form_window.grab_set()
+        fw, fh = 320, 200
+        overlay, form_window, ox,oy,ow,oh = create_modal(window, fw, fh)
 
         def hide_modal():
             if tooltip_window: tooltip_window.destroy()
@@ -1180,29 +1159,8 @@ def student_system_gui():
         is_edit = college_data is not None
         old_code = college_data[0] if is_edit else None
         
-        overlay = Toplevel(window)
-        overlay.overrideredirect(True)
-        overlay.configure(bg="black")
-        overlay.attributes("-alpha", 0.5)
-
-        ox = window.winfo_rootx()
-        oy = window.winfo_rooty()
-        ow = window.winfo_width()
-        oh = window.winfo_height()
-        overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
-
-        form_window = Toplevel(window)
-        form_window.overrideredirect(True)
-        form_window.configure(bg=bg_color, highlightbackground="#cccccc", highlightthickness=1)
-
         fw, fh = 400, 220
-        form_window.geometry(f"{fw}x{fh}+{ox + (ow//2) - (fw//2)}+{oy + (oh//2) - (fh//2)}")
-
-        overlay.update_idletasks()
-        overlay.deiconify()
-        form_window.update_idletasks()
-        form_window.deiconify()
-        form_window.grab_set()
+        overlay, form_window, ox,oy,ow,oh = create_modal(window, fw, fh)
 
         def hide_modal():
             if tooltip_window: tooltip_window.destroy()
@@ -1396,22 +1354,25 @@ def student_system_gui():
         if search_by_Student and len(selected_items) > 1:
             all_ids = [tree.item(item, 'values')[0] for item in selected_items]
             
-            menu.add_command(
-                label=f"Delete {len(selected_items)} Selected Students", 
-                command=lambda: delete_confirm(all_ids)
-            )
+            menu.add_command(image=delete_icon, label=f"Delete {len(selected_items)} Selected Students", 
+                             command=lambda: delete_confirm(all_ids), compound=LEFT)
+            
         else:
             data_value = tree.item(item_id, 'values')
             data_id = data_value[1] if search_by_Program else data_value[0]
 
             if search_by_Student:
-                menu.add_command(label="Edit", command=lambda: open_student_form(data_value))
+                menu.add_command(image= edit_icon, label="Edit", compound=LEFT, 
+                                 command=lambda: open_student_form(data_value))
             elif search_by_Program:
-                menu.add_command(label="Edit", command=lambda: open_program_form(data_value))
+                menu.add_command(image= edit_icon, label="Edit", compound=LEFT, 
+                                 command=lambda: open_program_form(data_value))
             elif search_by_College:
-                menu.add_command(label="Edit", command=lambda: open_college_form(data_value))
-            
-            menu.add_command(label="Delete", command=lambda: delete_confirm(data_id))
+                menu.add_command(image= edit_icon, label="Edit", compound=LEFT, 
+                                 command=lambda: open_college_form(data_value))
+                
+            menu.add_command(image=delete_icon, label="Delete", compound=LEFT, 
+                             command=lambda: delete_confirm(data_id))
             
         menu.post(event.x_root, event.y_root)
 
@@ -1452,16 +1413,9 @@ def student_system_gui():
 current_sort_col, current_sort_reverse = "Student ID", False
 
 toggle_search_by_student_value, toggle_search_by_program_value, toggle_search_by_college_value = 1, 1, 1
-toggle_sort_student, toggle_sort_program, toggle_sort_college = 1, 1, 1
 search_by_Student, search_by_Program, search_by_College = True, False, False
-
 search_by_student_ID, search_by_student_name, search_by_student_program = False, False, False
-sort_by_name, sort_by_year, sort_by_program = False, False, False
-
 search_by_program_code, search_by_program_name, search_by_program_college = False, False, False
-sort_by_program_code, sort_by_program_name = False, False
-
 search_by_college_code, search_by_college_name = False, False
-sort_by_college_name = False
 
 search_job = None
