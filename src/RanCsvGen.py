@@ -5,7 +5,7 @@ from src.csv_core import CsvWrite
 def generate_random_student():
 
     generate_program_college()
-    student_count = 1000
+    student_count = 5000
 
     def create_student_ID(year_prefix):
         student_number = f"{random.randint(1,9999):04d}" 

@@ -72,9 +72,16 @@ def studentID(student_ID):
             return [row]
     return None
 
-def studentName(student_name):
+def studentName(student_name, boolean=False):
     student_data = CsvRead.student()
 
+    if boolean:
+            for row in student_data:
+                if row[1].lower() == student_name.lower() or row[2].lower() == student_name.lower():
+                    return True
+                elif f"{row[1]} {row[2]}".lower() == student_name.lower() or f"{row[2]} {row[1]}".lower() == student_name.lower():
+                    return True
+                
     student_with_name = []
     for row in student_data:
         if row[1].lower() == student_name.lower() or row[2].lower() == student_name.lower():
@@ -86,7 +93,7 @@ def studentName(student_name):
         return student_with_name 
     return None
 
-def studentProgram(program):
+def studentProgram(program, boolean=False):
     student_data = CsvRead.student()
 
     if programCode(program):
@@ -95,6 +102,11 @@ def studentProgram(program):
         program_code = programName(program)[1]
     else:
         return None
+
+    if boolean:
+        for row in student_data:
+            if row[3].lower() == program_code.lower():
+                return True
 
     students_in_program = []
     for row in student_data:
@@ -105,7 +117,7 @@ def studentProgram(program):
         return students_in_program
     return None
 
-def studentCollege(student_college):
+def studentCollege(student_college, boolean=False):
     student_data = CsvRead.student()
     program_data = CsvRead.program()
 
@@ -121,6 +133,11 @@ def studentCollege(student_college):
     for rows in programs_in_college:
         programs.append(rows[1])
     
+    if boolean:
+        for row in student_data:
+            if row[3] in programs: 
+                return True
+
     students_in_college = []
     for row in student_data:
         if row[3] in programs:
@@ -130,10 +147,16 @@ def studentCollege(student_college):
         return students_in_college
     return None
 
-def studentYear(student_year):
+def studentYear(student_year, boolean=False):
     student_data = CsvRead.student()
 
     students_in_year = []
+
+    if boolean:
+        for row in student_data:
+            if row[4] == student_year:
+                return True
+
     for row in student_data:
         if row[4] == student_year:
             students_in_year.append(row)
@@ -142,13 +165,18 @@ def studentYear(student_year):
         return students_in_year
     return None
 
-def studentGender(student_gender):
+def studentGender(student_gender, boolean=False):
     student_data = CsvRead.student()
 
     if student_gender.lower() == "male":
         student_gender = "m"
     elif student_gender.lower() == "female":
         student_gender = "f"
+
+    if boolean:
+        for row in student_data:
+            if row[5].lower() == student_gender.lower():
+                return True
 
     students_in_gender = []
     for row in student_data:

@@ -14,7 +14,7 @@ def student_system_gui():
     window.title("Student Information System")
     window.config(bg=bg_color)
     window.config()
-    window.resizable(False, False)
+    window.resizable(False, True)
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     images_dir = os.path.join(base_dir, "Images")
@@ -68,7 +68,7 @@ def student_system_gui():
     add_button.pack(side=LEFT, padx=(0,5))
     
     output_frame = Frame(window, bg=bg_color)
-    output_frame.pack(pady=20)
+    output_frame.pack(pady=(20,0))
 
     # --- GUI Functions ---
 
@@ -127,7 +127,7 @@ def student_system_gui():
         container.pack(fill=BOTH, expand=True)
 
         Label(container, text="Generate Data?", bg=bg_color, font=("Arial", 11, "bold"), fg="#333").pack(pady=(0, 10))
-        Label(container, text="It looks like your CSV files are empty.\nWould you like to generate 1000\nrandom student records?", 
+        Label(container, text="It looks like your CSV files are empty.\nWould you like to generate 5000\nrandom student records?", 
               bg=bg_color, justify=CENTER, font=("Arial", 9)).pack(pady=5)
 
         btn_frame = Frame(container, bg=bg_color)
@@ -184,10 +184,15 @@ def student_system_gui():
                     command=lambda: treeview_sort_column(tree, col, not reverse))
 
     def search_student():
-        for widget in output_frame.winfo_children():
-            widget.destroy()
+        global current_page
+        current_page = 0
 
         def display_result(data):
+            global current_page, current_data
+
+            for widget in output_frame.winfo_children():
+                widget.destroy()
+        
             def handle_click(event):
                 if tree.identify_region(event.x, event.y) == "separator":
                     return "break"
@@ -197,12 +202,22 @@ def student_system_gui():
                 return
             if not isinstance(data, list): data = [data]
 
+            current_data = data
+            total_rows = len(current_data)
+            total_pages = (total_rows - 1) // ROWS_PER_PAGE + 1
+
+            if current_page >= total_pages:
+                current_page = 0
+
+            start = current_page * ROWS_PER_PAGE
+            end = start + ROWS_PER_PAGE
+            page_data = current_data[start:end]
+
             headers = CsvRead.student()[0]
             tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
             tree.pack(fill=BOTH, expand=TRUE)
 
-            for i in range (len(headers)):
-                h = headers[i]
+            for i, h in enumerate(headers):
                 tree.heading(h, text=h.title(),
                              command= lambda c = h: treeview_sort_column(tree, c, False))
                 if i == 0: tree.column(h, width=75, anchor=CENTER)
@@ -213,7 +228,7 @@ def student_system_gui():
                 elif i == 5: tree.column(h, width=50, anchor=CENTER)
                 tree.column(h, stretch=False)
 
-            for item in data:
+            for item in page_data:
                 tree.insert("", END, values=item,)
 
             if current_sort_col in headers:
@@ -223,9 +238,31 @@ def student_system_gui():
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
             tree.bind("<B1-Motion>", lambda event: on_left_drag_select(event, tree))
 
-            count_label = Label(output_frame, text=f"Displaying {len(data)} Students",
-                        font=("Helvetica", 8), bg="#ffffff", fg="#ABABAB")
-            count_label.pack(side=RIGHT)
+            control_frame = Frame(output_frame, bg="#ffffff")
+            control_frame.pack(fill=X, pady=5)
+
+            def prev_page():
+                global current_page
+                if current_page > 0:
+                    current_page -= 1
+                    display_result(current_data)
+
+            def next_page():
+                global current_page
+                if current_page < total_pages - 1:
+                    current_page += 1
+                    display_result(current_data)
+
+            Button(control_frame, text=">>", font=("Helvetica", 8),
+                    command=next_page).pack(side=RIGHT, padx=5)
+            Label(control_frame, text=f"Page {current_page + 1} of {total_pages}",
+                    bg="#ffffff", font=("Helvetica", 8)).pack(side=RIGHT)
+            Button(control_frame, text="<<", font=("Helvetica", 8),
+                    command=prev_page).pack(side=RIGHT, padx=5)
+
+            count_label = Label(control_frame, text=f"Showing {len(page_data)} of {total_rows} Students",
+                                font=("Helvetica", 8), bg="#ffffff", fg="#ABABAB")
+            count_label.pack(side=LEFT)
 
         def single_search(input_text):
             if search_by_student_ID:
@@ -240,13 +277,13 @@ def student_system_gui():
             else:
                 if CsvSearch.studentID(input_text):
                     result = CsvSearch.studentID(input_text)
-                elif CsvSearch.studentName(input_text):
+                elif CsvSearch.studentName(input_text, True):
                     result = CsvSearch.studentName(input_text)
-                elif CsvSearch.studentProgram(input_text):
+                elif CsvSearch.studentProgram(input_text, True):
                     result = CsvSearch.studentProgram(input_text)
-                elif CsvSearch.studentCollege(input_text):
+                elif CsvSearch.studentCollege(input_text, True):
                     result = CsvSearch.studentCollege(input_text)
-                elif CsvSearch.studentYear(input_text):
+                elif CsvSearch.studentYear(input_text, True):
                     result = CsvSearch.studentYear(input_text)
                 elif input_text.lower() in ["male", "female", "m", "f"]:
                     result = CsvSearch.studentGender(input_text)
@@ -282,7 +319,7 @@ def student_system_gui():
                 intersected = set.intersection(*result_set)
                 result = [list(r) for r in intersected]
             else: result = []
-                          
+                        
         display_result(result)
 
     def search_program():
@@ -633,7 +670,7 @@ def student_system_gui():
         # PROGRAM DELETE
 
         elif search_by_Program:
-            fw, fh = 300, 270
+            fw, fh = 300, 285
 
             all_students = CsvRead.student()[1:]
             students_to_delete = [row for row in all_students if row[3] == data_id]
@@ -645,6 +682,9 @@ def student_system_gui():
             ).pack(pady=5)
 
             if students_to_delete:
+
+                Label(container, text=f"{len(students_to_delete)} Student", fg="blue", bg=bg_color)\
+                    .pack(pady=(0, 0))
 
                 frame = Frame(container)
                 frame.pack(fill=BOTH, expand=True, pady=5)
@@ -761,22 +801,26 @@ def student_system_gui():
         def confirm_delete():
 
             if search_by_Student:
-                if is_bulk: 
-                    for Id in data_id: CsvDelete.student(Id)
-                else: CsvDelete.student(data_id)
+                CsvDelete.student(data_id)
                 search_student()
 
             elif search_by_Program:
+                student_ids = []
                 for student in students_to_delete:
-                    CsvDelete.student(student[0])
+                    student_ids.append(student[0])
+                CsvDelete.student(student_ids)
                 CsvDelete.program(data_id)
                 search_program()
 
             elif search_by_College:
+                student_ids = []
+                program_cds = []
                 for student in students_to_delete:
-                    CsvDelete.student(student[0])
+                    student_ids.append(student[0])
+                CsvDelete.student(student_ids)
                 for program in programs_to_delete:
-                    CsvDelete.program(program[1])
+                    program_cds.append(program[1])
+                CsvDelete.program(program_cds)
                 CsvDelete.college(data_id)
                 search_college()
 
@@ -1378,7 +1422,7 @@ def student_system_gui():
 
     def on_typing(event):
         global search_job
-        waiting_time = 50
+        waiting_time = 100
 
         if search_job is not None:
             window.after_cancel(search_job)
@@ -1409,6 +1453,10 @@ def student_system_gui():
     CsvSort.All()
 
     return window
+
+ROWS_PER_PAGE = 200
+current_page = 0
+current_data = []
 
 current_sort_col, current_sort_reverse = "Student ID", False
 
