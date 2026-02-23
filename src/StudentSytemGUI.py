@@ -1378,7 +1378,7 @@ def student_system_gui():
 
     def on_typing(event):
         global search_job
-        waiting_time = 200
+        waiting_time = 50
 
         if search_job is not None:
             window.after_cancel(search_job)

@@ -7,9 +7,19 @@ def generate_random_student():
     generate_program_college()
     student_count = 1000
 
+    def create_student_ID(year_prefix):
+        student_number = f"{random.randint(1,9999):04d}" 
+        student_id = f"{year_prefix}-{student_number}"
+
+        if student_id in student_ids: 
+            student_id = create_student_ID(year_prefix)
+        return student_id
+
     data = [
         ["Student ID", "Last Name", "First Name", "Program Code", "Year", "Gender"]
     ]
+
+    student_ids = []
 
     last_names = [
         "Smith", "Johnson", "Lee", "Garcia", "Brown", 
@@ -30,11 +40,10 @@ def generate_random_student():
         program_codes.append(row[1])
     genders = ["M", "F"]
 
-    for i in range(student_count):
+    for _ in range(student_count):
         year_prefix = random.choice([2021,2022,2023,2024,2025])
-        student_number = f"{random.randint(1,9999):04d}" 
-        student_id = f"{year_prefix}-{student_number}"
-        
+        student_id = create_student_ID(year_prefix)
+
         last = random.choice(last_names)
         first = random.choice(first_names)
         program = random.choice(program_codes)
@@ -42,6 +51,7 @@ def generate_random_student():
         gender = random.choice(genders)
         
         data.append([student_id, last, first, program, year, gender])
+        student_ids.append(student_id)
 
     CsvWrite.student(data[1:])
 
