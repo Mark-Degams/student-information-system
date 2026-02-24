@@ -55,7 +55,7 @@ python -c "from src.RanCsvGen import generate_random_student; generate_random_st
 - Student ID format enforced: `YYYY-NNNN` (see `src/Constraints.py`).
 - The random generator also seeds College/Program data (`src/RanCsvGen.py`).
 - Sorting: click any table column header to sort (arrow shows direction); numeric parts (like year or the numeric part of `Student ID`) sort numerically.
-- Multi-key search: separate keywords with commas (`,`) to intersect results across keys (e.g., `2022, Smith, BSCS`).
+- Multi-key search: separate keywords with spaces to intersect results across keys (e.g., `2022 Smith BSCS`).
 - Left Click and Drag to Multi-Select `Student` or `Programs` to Open Mutli Delete or Transfer.
 
 ## 🗃️ CSV Data Model

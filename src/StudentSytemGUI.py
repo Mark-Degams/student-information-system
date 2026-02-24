@@ -14,7 +14,7 @@ def student_system_gui():
     window.title("Student Information System")
     window.config(bg=bg_color)
     window.config()
-    window.resizable(False, True)
+    window.resizable(False, False)
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     images_dir = os.path.join(base_dir, "Images")
@@ -96,6 +96,7 @@ def student_system_gui():
         overlay.update_idletasks()
         overlay.deiconify()
         modal.deiconify()
+        modal.grab_set()
 
         return overlay, modal, ox,oy,ow,oh
 
@@ -277,8 +278,6 @@ def student_system_gui():
             else:
                 if CsvSearch.studentID(input_text):
                     result = CsvSearch.studentID(input_text)
-                elif CsvSearch.studentName(input_text, True):
-                    result = CsvSearch.studentName(input_text)
                 elif CsvSearch.studentProgram(input_text, True):
                     result = CsvSearch.studentProgram(input_text)
                 elif CsvSearch.studentCollege(input_text, True):
@@ -300,7 +299,7 @@ def student_system_gui():
             return result
             
         input_text = input_entry.get().strip()
-        keywords = [k.strip() for k in input_text.split(",") if k.strip()]
+        keywords = [k.strip() for k in input_text.split(" ") if k.strip()]
         result = None
             
         if input_text.lower() in ["all", "", "enter student info..."]:
