@@ -25,6 +25,7 @@ def student_system_gui():
     addC_icon = PhotoImage(file=os.path.join(images_dir, "addC.png"))
     edit_icon = PhotoImage(file=os.path.join(images_dir, "edit.png"))
     delete_icon = PhotoImage(file=os.path.join(images_dir, "delete.png"))
+    transfer_icon = PhotoImage(file=os.path.join(images_dir, "transfer.png"))
     window.iconphoto(True, title_icon)
 
     style = ttk.Style()
@@ -95,7 +96,6 @@ def student_system_gui():
         overlay.update_idletasks()
         overlay.deiconify()
         modal.deiconify()
-        modal.grab_set()
 
         return overlay, modal, ox,oy,ow,oh
 
@@ -358,6 +358,7 @@ def student_system_gui():
 
             tree.bind('<Button-1>', handle_click)
             tree.bind("<Button-3>", lambda event: on_right_click(event, tree))
+            tree.bind("<B1-Motion>", lambda event: on_left_drag_select(event, tree))
 
         result = None
 
@@ -724,19 +725,19 @@ def student_system_gui():
             ).pack(pady=5)
 
             if programs_to_delete:
-                fw, fh = (480, 420) if students_to_delete else (480, 270)
+                fw, fh = (480, 400) if students_to_delete else (480, 270)
 
                 Label(container, text=f"{len(programs_to_delete)} Programs", fg="blue", bg=bg_color)\
                     .pack(pady=(10, 0))
 
                 prog_frame = Frame(container)
-                prog_frame.pack(fill="x", pady=5)
+                prog_frame.pack(fill="x", pady=(5,0))
 
                 prog_tree = ttk.Treeview(
                     prog_frame,
                     columns=("Program Code",),
                     show="headings",
-                    height=4
+                    height=3
                 )
 
                 prog_scroll = Scrollbar(prog_frame, orient="vertical",
@@ -1345,6 +1346,215 @@ def student_system_gui():
         validate()
         form_window.protocol("WM_DELETE_WINDOW", lambda: (hide_tooltip(), form_window.destroy()))
 
+    def transfer_student(student_ids):
+        fw, fh = 300, 270
+        overlay, transfer_window, ox,oy,ow,oh = create_modal(window, fw, fh)
+
+        def hide_modal():
+            transfer_window.destroy(); overlay.destroy()
+
+        def start_drag(event):
+            transfer_window._x, transfer_window._y = event.x, event.y
+
+        def do_drag(event):
+            nx = transfer_window.winfo_x() + event.x - transfer_window._x
+            ny = transfer_window.winfo_y() + event.y - transfer_window._y
+            transfer_window.geometry(f"+{max(ox, min(nx, ox + ow - fw))}+{max(oy, min(ny, oy + oh - fh))}")
+
+        def sync_positions(event=None):
+            if transfer_window.winfo_exists() and transfer_window.winfo_viewable():
+                ox = window.winfo_rootx()
+                oy = window.winfo_rooty()
+                ow = window.winfo_width()
+                oh = window.winfo_height()
+                overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+                overlay.deiconify()
+                fx = ox + (ow // 2) - (fw // 2)
+                fy = oy + (oh // 2) - (fh // 2)
+                transfer_window.geometry(f"+{fx}+{fy}")
+                transfer_window.deiconify()
+
+        window.bind("<Configure>", sync_positions)
+
+        container = Frame(transfer_window, bg=bg_color)
+        container.pack(fill=BOTH, expand=True, padx=15, pady=15)
+        container.bind("<Button-1>", start_drag)
+        container.bind("<B1-Motion>", do_drag)
+        window.bind("<Configure>", sync_positions)
+
+        def confirm_transfer(): 
+            program_selected = prog_box.get()
+            year_selected = year_box.get()
+            replacement_student = []
+            for row in CsvRead.student()[1:]:
+                if row[0] in student_ids:
+                    row[3], row[4] = program_selected, year_selected
+                replacement_student.append(row)
+            CsvWrite.student(replacement_student)
+            
+            hide_modal()
+            search_student()
+
+        if not isinstance(student_ids, list): student_ids = [student_ids]
+
+        Label(container, text=f"Transfer {len(student_ids)} Students",
+                bg=bg_color, font=("Arial", 10, "bold")
+            ).pack(pady=5)
+
+        frame = Frame(container)
+        frame.pack(fill=BOTH, expand=True, pady=5)
+
+        tree = ttk.Treeview(frame, columns=("Student ID",),
+            show="headings", height=4)
+
+        scrollbar = Scrollbar(frame, orient="vertical", command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+
+        tree.pack(side="left", fill=BOTH, expand=True)
+        scrollbar.pack(side="right", fill="y")
+
+        tree.heading("Student ID", text="Student ID")
+        tree.column("Student ID", width=200, anchor=CENTER)
+
+        for row in student_ids:
+            tree.insert("", END, values=(row))
+
+        college_codes = [row[0] for row in CsvRead.college()[1:]]
+        first_student = CsvSearch.studentID(student_ids[0])
+        first_college = CsvSearch.programCode(first_student[0][3])[0]
+
+        input_frames = Frame(container, bg=bg_color)
+        input_frames.pack(pady=(5,0))
+
+        for i in range(4):
+            input_frames.grid_columnconfigure(i, weight=1)
+
+        Label(input_frames, text="College", bg=bg_color).grid(row=1, column=0, sticky=W)
+        Label(input_frames, text="Program", bg=bg_color).grid(row=1, column=1, columnspan=2, sticky=W)
+        Label(input_frames, text="Year", bg=bg_color).grid(row=1, column=3, sticky=W)
+
+        col_box = ttk.Combobox(input_frames, values=college_codes, state="readonly", width=5)
+        col_box.grid(row=2, column=0, sticky=W, padx=(5))
+        prog_box = ttk.Combobox(input_frames, state="readonly", width=10)
+        prog_box.grid(row=2, column=1, columnspan=2, sticky=EW, padx=(5))
+        year_box = ttk.Combobox(input_frames, values=["1", "2", "3", "4", "5"], state="readonly", width=3)
+        year_box.grid(row=2, column=3, sticky=EW, padx=(5))
+        col_box.set(first_college)
+        prog_box.set(first_student[0][3])
+        year_box.set(first_student[0][4])
+
+
+        prog_box.config(values= [row[1] for row in CsvSearch.programCollege(first_college)])
+        col_box.bind("<<ComboboxSelected>>", lambda e: (
+            (progs := CsvSearch.programCollege(col_box.get())),
+            prog_box.config(values=[row[1] for row in progs] if progs else [])))
+            
+        btn_frame = Frame(transfer_window, bg=bg_color)
+        btn_frame.pack(pady=(0,10))
+
+        Button(btn_frame, text="Confirm", bg="#3ce767", fg="white", 
+               width=12, command=confirm_transfer).pack(side=LEFT, padx=10)
+        Button(btn_frame, text="Cancel", bg="#e74c3c", width=12, command=hide_modal).pack(side=LEFT)
+
+        overlay.update_idletasks()
+        overlay.deiconify()
+        overlay.attributes("-alpha", 0.5)
+        
+        transfer_window.deiconify()
+        transfer_window.lift()
+        transfer_window.focus_force()
+        transfer_window.grab_set()
+
+    def transfer_program(program_ids):
+        fw, fh = 300, 230
+        overlay, transfer_window, ox,oy,ow,oh = create_modal(window, fw, fh)
+
+        def hide_modal():
+            transfer_window.destroy(); overlay.destroy()
+
+        def start_drag(event):
+            transfer_window._x, transfer_window._y = event.x, event.y
+
+        def do_drag(event):
+            nx = transfer_window.winfo_x() + event.x - transfer_window._x
+            ny = transfer_window.winfo_y() + event.y - transfer_window._y
+            transfer_window.geometry(f"+{max(ox, min(nx, ox + ow - fw))}+{max(oy, min(ny, oy + oh - fh))}")
+
+        def sync_positions(event=None):
+            if transfer_window.winfo_exists() and transfer_window.winfo_viewable():
+                ox = window.winfo_rootx()
+                oy = window.winfo_rooty()
+                ow = window.winfo_width()
+                oh = window.winfo_height()
+                overlay.geometry(f"{ow}x{oh}+{ox}+{oy}")
+                overlay.deiconify()
+                fx = ox + (ow // 2) - (fw // 2)
+                fy = oy + (oh // 2) - (fh // 2)
+                transfer_window.geometry(f"+{fx}+{fy}")
+                transfer_window.deiconify()
+
+        window.bind("<Configure>", sync_positions)
+
+        container = Frame(transfer_window, bg=bg_color)
+        container.pack(fill=BOTH, expand=True, padx=15, pady=15)
+        container.bind("<Button-1>", start_drag)
+        container.bind("<B1-Motion>", do_drag)
+        window.bind("<Configure>", sync_positions)
+
+        def confirm_transfer(): 
+            college_selected = col_box.get()
+            CsvReplace.program(program_ids, college_selected)
+            hide_modal()
+            search_program()
+
+        if not isinstance(program_ids, list): program_ids = [program_ids]
+
+        if search_by_Program:
+            Label(container, text=f"Transfer {len(program_ids)} Programs To Different College",
+                    bg=bg_color, font=("Arial", 10, "bold")
+                ).pack(pady=5)
+
+            frame = Frame(container)
+            frame.pack(fill=BOTH, expand=True, pady=5)
+
+            tree = ttk.Treeview(frame, columns=("Program Code",),
+                show="headings", height=3)
+
+            scrollbar = Scrollbar(frame, orient="vertical", command=tree.yview)
+            tree.configure(yscrollcommand=scrollbar.set)
+
+            tree.pack(side="left", fill=BOTH, expand=True)
+            scrollbar.pack(side="right", fill="y")
+
+            tree.heading("Program Code", text="Program Code")
+            tree.column("Program Code", width=200, anchor=CENTER)
+
+            for row in program_ids:
+                tree.insert("", END, values=(row))
+
+            college_codes = [row[0] for row in CsvRead.college()[1:]]
+            col_box = ttk.Combobox(container, values=college_codes, state="readonly", width=5)
+            col_box.pack()
+            col_box.set(CsvSearch.programCode(program_ids[0])[0])
+            
+        btn_frame = Frame(transfer_window, bg=bg_color)
+        btn_frame.pack(pady=(5,10))
+
+        Button(btn_frame, text="Confirm", bg="#3ce767", fg="white", 
+               width=12, command=confirm_transfer).pack(side=LEFT, padx=10)
+        Button(btn_frame, text="Cancel", bg="#e74c3c", width=12, command=hide_modal).pack(side=LEFT)
+
+        
+        
+        overlay.update_idletasks()
+        overlay.deiconify()
+        overlay.attributes("-alpha", 0.5)
+        
+        transfer_window.deiconify()
+        transfer_window.lift()
+        transfer_window.focus_force()
+        transfer_window.grab_set()
+
     def show_add_menu():
         add_menu = Menu(window, tearoff=0)
         add_menu.add_command(image=addS_icon, label="Add Student", 
@@ -1385,7 +1595,7 @@ def student_system_gui():
             
         selected_items = tree.selection()
         
-        if search_by_Student:
+        if search_by_Student or search_by_Program:
             if (item_id not in selected_items):
                 tree.selection_set(item_id)
                 selected_items = (item_id,)
@@ -1395,12 +1605,17 @@ def student_system_gui():
 
         menu = Menu(window, tearoff=0)
 
-        if search_by_Student and len(selected_items) > 1:
-            all_ids = [tree.item(item, 'values')[0] for item in selected_items]
-            
-            menu.add_command(image=delete_icon, label=f"Delete {len(selected_items)} Selected Students", 
-                             command=lambda: delete_confirm(all_ids), compound=LEFT)
-            
+        if len(selected_items) > 1:
+            if search_by_Student:
+                all_ids = [tree.item(item, 'values')[0] for item in selected_items]
+                menu.add_command(image=transfer_icon, label=f"Transfer Students", 
+                                command=lambda: transfer_student(all_ids), compound=LEFT)
+                menu.add_command(image=delete_icon, label=f"Delete {len(selected_items)} Selected Students", 
+                                command=lambda: delete_confirm(all_ids), compound=LEFT)
+            elif search_by_Program:
+                all_ids = [tree.item(item, 'values')[1] for item in selected_items]
+                menu.add_command(image=transfer_icon, label=f"Transfer College", 
+                                command=lambda: transfer_program(all_ids), compound=LEFT)
         else:
             data_value = tree.item(item_id, 'values')
             data_id = data_value[1] if search_by_Program else data_value[0]

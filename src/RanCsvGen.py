@@ -2,10 +2,9 @@ import random
 from src.csv_core import CsvRead
 from src.csv_core import CsvWrite
 
-def generate_random_student():
+def generate_random_student(student_count = 5000):
 
     generate_program_college()
-    student_count = 5000
 
     def create_student_ID(year_prefix):
         student_number = f"{random.randint(1,9999):04d}" 
@@ -22,32 +21,69 @@ def generate_random_student():
     student_ids = []
 
     last_names = [
-        "Smith", "Johnson", "Lee", "Garcia", "Brown", 
-        "Davis", "Martinez", "Clark", "Lopez", "Miller",
-        "Wilson", "Taylor", "Anderson", "Thomas", "Hernandez", 
-        "Moore", "Martin", "Jackson", "Thompson", "White",
-        "Adeva", "Bongcawel", "Villadolid", 
+        "Smith", "Johnson", "Williams", "Brown", "Jones",
+        "Garcia", "Miller", "Davis", "Rodriguez", "Martinez",
+        "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+        "Thomas", "Taylor", "Moore", "Jackson", "Martin",
+        "Lee", "Perez", "Thompson", "White", "Harris",
+        "Sanchez", "Clark", "Ramirez", "Lewis", "Robinson",
+        "Walker", "Young", "Allen", "King", "Wright",
+        "Scott", "Torres", "Nguyen", "Hill", "Flores",
+        "Green", "Adams", "Nelson", "Baker", "Hall",
+        "Rivera", "Campbell", "Mitchell", "Carter", "Roberts",
+        "Gomez", "Phillips", "Evans", "Turner", "Diaz",
+        "Parker", "Cruz", "Edwards", "Collins", "Reyes",
+        "Stewart", "Morris", "Morales", "Murphy", "Cook",
+        "Rogers", "Gutierrez", "Ortiz", "Morgan", "Cooper",
+        "Peterson", "Bailey", "Reed", "Kelly", "Howard",
+        "Ramos", "Kim", "Cox", "Ward", "Richardson",
+        "Watson", "Brooks", "Chavez", "Wood", "James",
+        "Bennett", "Gray", "Mendoza", "Ruiz", "Hughes",
+        "Price", "Alvarez", "Castillo", "Sanders", "Patel",
+        "Myers", "Long", "Ross", "Foster", "Jimenez",
+        "Powell", "Jenkins", "Perry", "Russell", "Sullivan",
+        "Adeva", "Bongcawel", "Villadolid", "Dela Cruz", "Santos"
     ]
 
     first_names = [
-        "John", "Anna", "Mike", "Sophia", "David", 
-        "Emma", "Daniel", "Olivia", "Lucas", "Mia",
-        "James", "Isabella", "Ethan", "Charlotte", "Alexander", 
-        "Amelia", "Benjamin", "Harper", "Sebastian", "Evelyn"
+        "James", "Mary", "John", "Patricia", "Robert",
+        "Jennifer", "Michael", "Linda", "William", "Elizabeth",
+        "David", "Barbara", "Richard", "Susan", "Joseph",
+        "Jessica", "Thomas", "Sarah", "Charles", "Karen",
+        "Christopher", "Nancy", "Daniel", "Lisa", "Matthew",
+        "Betty", "Anthony", "Margaret", "Mark", "Sandra",
+        "Donald", "Ashley", "Steven", "Kimberly", "Paul",
+        "Emily", "Andrew", "Donna", "Joshua", "Michelle",
+        "Kenneth", "Dorothy", "Kevin", "Carol", "Brian",
+        "Amanda", "George", "Melissa", "Edward", "Deborah",
+        "Ronald", "Stephanie", "Timothy", "Rebecca", "Jason",
+        "Laura", "Jeffrey", "Sharon", "Ryan", "Cynthia",
+        "Jacob", "Kathleen", "Gary", "Amy", "Nicholas",
+        "Shirley", "Eric", "Angela", "Jonathan", "Helen",
+        "Stephen", "Anna", "Larry", "Brenda", "Justin",
+        "Pamela", "Scott", "Nicole", "Brandon", "Emma",
+        "Benjamin", "Samantha", "Samuel", "Katherine", "Gregory",
+        "Christine", "Alexander", "Debra", "Frank", "Rachel",
+        "Patrick", "Catherine", "Raymond", "Carolyn", "Jack",
+        "Janet", "Dennis", "Maria", "Jerry", "Heather",
+        "Tyler", "Diane", "Aaron", "Ruth", "Jose",
+        "Olivia", "Henry", "Evelyn", "Adam", "Sophia"
     ]
+
     program_codes = []
     for row in CsvRead.program()[1:]:
         program_codes.append(row[1])
     genders = ["M", "F"]
 
     for _ in range(student_count):
-        year_prefix = random.choice([2021,2022,2023,2024,2025])
+        year_prefix = random.choice([2019,2020,2021,2022,2023,2024,2025])
         student_id = create_student_ID(year_prefix)
 
         last = random.choice(last_names)
         first = random.choice(first_names)
         program = random.choice(program_codes)
         year = random.randint(1,2026-year_prefix)
+        if year > 5: year = 5
         gender = random.choice(genders)
         
         data.append([student_id, last, first, program, year, gender])

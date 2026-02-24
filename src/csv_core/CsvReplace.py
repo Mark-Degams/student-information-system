@@ -26,11 +26,20 @@ def program(Program_Code, replacement_data):
     program_data = CsvRead.program()[1:]
 
     new_program_data = []
-    for row in program_data:
-        if row[1].lower() != Program_Code.lower():
+    if isinstance(Program_Code, list):
+        Program_Code = [row.lower() for row in Program_Code]
+        for row in program_data:
+            if row[1].lower() in Program_Code:
+                row[0] = replacement_data
+                print(row)
             new_program_data.append(row)
-        else:
-            new_program_data.append(replacement_data)
+            
+    else:
+        for row in program_data:
+            if row[1].lower() != Program_Code.lower():
+                new_program_data.append(row)
+            else:
+                new_program_data.append(replacement_data)
 
     CsvWrite.program(new_program_data, True)
 
