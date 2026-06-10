@@ -14,7 +14,7 @@ def student_system_gui():
     window.title("Student Information System")
     window.config(bg=bg_color)
     window.config()
-    window.resizable(False, False)
+    window.resizable(True, True)
 
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     images_dir = os.path.join(base_dir, "Images")
@@ -57,19 +57,19 @@ def student_system_gui():
         buttons.config(font=("Helvetica", 9), relief= FLAT, overrelief= FLAT, activebackground="#B90000", 
                        bd=0, highlightthickness=0, borderwidth=0, width=8)
 
-    input_frame = Frame(window, bg=bg_color, width=575)
+    input_frame = Frame(window, bg=bg_color)
     input_frame.pack(pady=(20,0), padx=(0,0))
 
     toggle_search_button = Button(input_frame, width=16,text="Search by: Default")
-    input_entry = Entry(input_frame, width=45, font=("Arial", 12), relief=FLAT, background="#cccccc")
+    input_entry = Entry(input_frame, font=("Arial", 12), relief=FLAT, background="#cccccc")
     add_button = Button(input_frame,  text = "+", width=2, height=1)
 
     toggle_search_button.pack(side=LEFT, padx=(0,5))
-    input_entry.pack(side=LEFT, padx=5)
+    input_entry.pack(side=LEFT, padx=5, fill=X, expand=True)
     add_button.pack(side=LEFT, padx=(0,5))
     
     output_frame = Frame(window, bg=bg_color)
-    output_frame.pack(pady=(20,0))
+    output_frame.pack(pady=(20,0), fill=BOTH, expand=True)
 
     # --- GUI Functions ---
 
@@ -215,7 +215,7 @@ def student_system_gui():
             page_data = current_data[start:end]
 
             headers = CsvRead.student()[0]
-            tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
+            tree = ttk.Treeview(output_frame, columns=headers, show="headings")
             tree.pack(fill=BOTH, expand=TRUE)
 
             for i, h in enumerate(headers):
@@ -227,7 +227,7 @@ def student_system_gui():
                 elif i == 3: tree.column(h, width=100)
                 elif i == 4: tree.column(h, width=50, anchor=CENTER)
                 elif i == 5: tree.column(h, width=50, anchor=CENTER)
-                tree.column(h, stretch=False)
+                tree.column(h, stretch=True)
 
             for item in page_data:
                 tree.insert("", END, values=item,)
@@ -338,7 +338,7 @@ def student_system_gui():
             if not isinstance(data, list): data = [data]
 
             headers = CsvRead.program()[0]
-            tree = ttk.Treeview(output_frame, columns=headers, show="headings", height=11)
+            tree = ttk.Treeview(output_frame, columns=headers, show="headings")
             tree.pack(fill=BOTH, expand=True)
 
             for i in range(len(headers)):
@@ -347,7 +347,7 @@ def student_system_gui():
                              command= lambda c = h: treeview_sort_column(tree, c, False))
                 if i == 0: tree.column(h, width=90, anchor=CENTER)
                 elif i == 1: tree.column(h, width=100)
-                elif i == 2: tree.column(h, width=385)
+                elif i == 2: tree.column(h, width=385, stretch=True)
 
             for item in data:
                 tree.insert("", END, values=item)
@@ -677,7 +677,7 @@ def student_system_gui():
 
             Label(
                 container,
-                text=f"⚠ Deleting Program {data_id}\nwill also delete:",
+                text=f"⚠ Deleting Program {data_id}\nwill set the student program to N/A:",
                 bg=bg_color, fg="#e9240e", font=("Arial", 11, "bold")
             ).pack(pady=5)
 
@@ -719,7 +719,9 @@ def student_system_gui():
             program_codes = [p[1] for p in programs_to_delete]
             students_to_delete = [row for row in all_students if row[3] in program_codes]
 
-            Label(container, text=f"⚠ Deleting College {data_id} will also delete:",
+            Label(
+                container, 
+                text=f"⚠ Deleting College {data_id} will set program and student college to N/A:",
                 bg=bg_color, fg="#e9240e", font=("Arial", 10, "bold")
             ).pack(pady=5)
 
@@ -805,22 +807,14 @@ def student_system_gui():
                 search_student()
 
             elif search_by_Program:
-                student_ids = []
-                for student in students_to_delete:
-                    student_ids.append(student[0])
-                CsvDelete.student(student_ids)
+                student_ids = [student[0] for student in students_to_delete]
+                CsvReplace.studentProgram(student_ids, "N/A")
                 CsvDelete.program(data_id)
                 search_program()
 
             elif search_by_College:
-                student_ids = []
-                program_cds = []
-                for student in students_to_delete:
-                    student_ids.append(student[0])
-                CsvDelete.student(student_ids)
-                for program in programs_to_delete:
-                    program_cds.append(program[1])
-                CsvDelete.program(program_cds)
+                program_cds = [program[1] for program in programs_to_delete]
+                CsvReplace.programCollege(program_cds, "N/A")
                 CsvDelete.college(data_id)
                 search_college()
 

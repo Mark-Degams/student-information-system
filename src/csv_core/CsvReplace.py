@@ -43,6 +43,15 @@ def program(Program_Code, replacement_data):
 
     CsvWrite.program(new_program_data, True)
 
+def programCollege(program_codes, value):
+    program_data = CsvRead.program()[1:]
+
+    for row in program_data:
+        if row[1] in program_codes:
+            row[0] = value
+
+    CsvWrite.program(program_data, True)
+
 def student(student_ID, replacement_data):
 
     student_data = CsvRead.student()[1:]
@@ -55,3 +64,13 @@ def student(student_ID, replacement_data):
             new_student_data.append(replacement_data)
 
     CsvWrite.student(new_student_data, True)
+
+def studentProgram(student_ids, value):
+    student_data = CsvRead.student()[1:]
+
+    for row in student_data:
+        if row[0] in student_ids:
+            row[3] = value
+
+    CsvWrite.student(student_data, True)
+
